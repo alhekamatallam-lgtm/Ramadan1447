@@ -27,18 +27,24 @@ export interface MosqueRecord {
   ملاحظات: string;
 }
 
-export interface ApiResponse {
-  success: boolean;
-  count: number;
-  data: MosqueRecord[];
+export interface MosqueInfo {
+  mosque_code: string;
+  المسجد: string;
+  supervisor?: string;
+  supervisor_name?: string;
+  pwd?: number | string;
 }
 
-export interface DayOption {
-  code: string;
+export interface DayInfo {
+  code_day: string;
   label: string;
 }
 
-export interface MosqueOption {
-  code: string;
-  name: string;
+export interface ApiResponse {
+  success: boolean;
+  sheets: {
+    daily_mosque_report: MosqueRecord[];
+    mosque: MosqueInfo[];
+    Dayd: DayInfo[];
+  };
 }

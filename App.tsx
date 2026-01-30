@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { mosqueApi } from './services/api';
-import { MosqueRecord } from './types';
+import { MosqueRecord, MosqueInfo, DayInfo } from './types';
 import RecordList from './components/RecordList';
 import RecordForm from './components/RecordForm';
 
@@ -10,26 +10,30 @@ type ViewState = 'list' | 'form';
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('list');
   const [records, setRecords] = useState<MosqueRecord[]>([]);
+  const [mosquesList, setMosquesList] = useState<MosqueInfo[]>([]);
+  const [daysList, setDaysList] = useState<DayInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingRecord, setEditingRecord] = useState<MosqueRecord | null>(null);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
-  const fetchRecords = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const response = await mosqueApi.getAll();
       if (response.success) {
-        setRecords(response.data);
+        setRecords(response.sheets.daily_mosque_report);
+        setMosquesList(response.sheets.mosque);
+        setDaysList(response.sheets.Dayd);
       }
     } catch (error) {
-      showNotification('خطأ في تحميل البيانات، يرجى المحاولة لاحقاً', 'error');
+      showNotification('خطأ في تحميل البيانات من السيرفر', 'error');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRecords();
+    fetchData();
   }, []);
 
   const showNotification = (message: string, type: 'success' | 'error') => {
@@ -40,16 +44,13 @@ const App: React.FC = () => {
   const handleSave = async (data: Partial<MosqueRecord>) => {
     setLoading(true);
     try {
-      // إرسال البيانات للباك اند
-      // ملاحظة: قد تواجه CORS في المتصفح مع Google Apps Script، ولكننا نفترض أنها مهيأة كما في الوصف
       await mosqueApi.save(data);
-      
       showNotification(editingRecord ? 'تم تحديث البيانات بنجاح' : 'تم إضافة السجل بنجاح', 'success');
       setView('list');
       setEditingRecord(null);
-      await fetchRecords(); // تحديث القائمة
+      await fetchData(); 
     } catch (error) {
-      showNotification('حدث خطأ أثناء محاولة الحفظ', 'error');
+      showNotification('حدث خطأ أثناء محاولة الحفظ، يرجى التحقق من الاتصال', 'error');
     } finally {
       setLoading(false);
     }
@@ -67,7 +68,6 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
-      {/* Header */}
       <header className="bg-emerald-800 text-white shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -86,32 +86,20 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Notifications */}
       {notification && (
-        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce
+        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[60] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce
           ${notification.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-          {notification.type === 'success' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
           <span className="font-bold">{notification.message}</span>
         </div>
       )}
 
-      {/* Loading Overlay */}
       {loading && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[55] flex flex-col items-center justify-center">
           <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-emerald-800 font-bold text-lg">جاري معالجة البيانات...</p>
+          <p className="mt-4 text-emerald-800 font-bold text-lg">جاري تحميل البيانات الحقيقية...</p>
         </div>
       )}
 
-      {/* Main Content */}
       <main>
         {view === 'list' ? (
           <RecordList 
@@ -122,15 +110,16 @@ const App: React.FC = () => {
         ) : (
           <RecordForm 
             initialData={editingRecord} 
+            mosques={mosquesList}
+            days={daysList}
             onSave={handleSave} 
             onCancel={() => { setView('list'); setEditingRecord(null); }} 
           />
         )}
       </main>
 
-      {/* Footer Branding */}
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-slate-400 text-sm">
-        مشروع رمضان المبارك 1447هـ - جميع الحقوق محفوظة
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-slate-400 text-xs sm:text-sm">
+        نظام إدارة الأنشطة الرمضانية 1447هـ - توثيق المساجد
       </footer>
     </div>
   );

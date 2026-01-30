@@ -1,20 +1,5 @@
 
-import { DayOption, MosqueOption } from './types';
-
-export const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxNQ7dv6Sl-LOkpCoriy9eB9_u4Z56JnAtMH4SiX0TTW6H9BX-yiwWRzULXzw-QQ3jYFA/exec';
-
-export const RAMADAN_DAYS: DayOption[] = Array.from({ length: 30 }, (_, i) => ({
-  code: `DAY_${(i + 1).toString().padStart(2, '0')}`,
-  label: `اليوم ${(i + 1)} رمضان`,
-}));
-
-export const MOSQUES: MosqueOption[] = [
-  { code: 'MOSQ_HAFR_ALBATIN', name: 'جامع حفر الباطن' },
-  { code: 'MOSQ_AL_RAJHI', name: 'جامع الراجحي' },
-  { code: 'MOSQ_AL_KHOZAM', name: 'جامع الخزام' },
-  { code: 'MOSQ_BIN_LADIN', name: 'جامع بن لادن' },
-  // يمكن إضافة المزيد من المساجد هنا
-];
+export const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxzKxW5-UqzED89Q_fKcbuFJSIWtAQrcM5b8KGSkpm4VSg-JSgZJkSIj_SdoKe2fDtRGA/exec';
 
 export const INITIAL_RECORD: any = {
   record_id: '',
