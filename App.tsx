@@ -19,14 +19,20 @@ const App: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      console.log('Fetching data from API...');
       const response = await mosqueApi.getAll();
-      if (response.success) {
-        setRecords(response.sheets.daily_mosque_report);
-        setMosquesList(response.sheets.mosque);
-        setDaysList(response.sheets.Dayd);
+      console.log('API Response:', response);
+      
+      if (response && response.success && response.sheets) {
+        setRecords(response.sheets.daily_mosque_report || []);
+        setMosquesList(response.sheets.mosque || []);
+        setDaysList(response.sheets.Dayd || []);
+      } else {
+        throw new Error('Invalid data structure from API');
       }
     } catch (error) {
-      showNotification('خطأ في تحميل البيانات من السيرفر', 'error');
+      console.error('Data loading error:', error);
+      showNotification('خطأ في تحميل البيانات من السيرفر، تأكد من إعدادات الـ API', 'error');
     } finally {
       setLoading(false);
     }
@@ -76,12 +82,12 @@ const App: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <h1 className="font-bold text-xl tracking-tight">إدارة مساجد رمضان 1447هـ</h1>
+            <h1 className="font-bold text-lg sm:text-xl tracking-tight">إدارة مساجد رمضان 1447هـ</h1>
           </div>
           
-          <nav className="hidden md:flex items-center gap-6">
-            <button onClick={() => setView('list')} className={`hover:text-emerald-200 transition-colors ${view === 'list' ? 'border-b-2 border-white' : ''}`}>القائمة الرئيسية</button>
-            <button onClick={handleAddNew} className={`hover:text-emerald-200 transition-colors ${view === 'form' && !editingRecord ? 'border-b-2 border-white' : ''}`}>إدخال جديد</button>
+          <nav className="flex items-center gap-4 sm:gap-6">
+            <button onClick={() => setView('list')} className={`text-sm sm:text-base hover:text-emerald-200 transition-colors ${view === 'list' ? 'border-b-2 border-white' : ''}`}>الرئيسية</button>
+            <button onClick={handleAddNew} className={`text-sm sm:text-base hover:text-emerald-200 transition-colors ${view === 'form' && !editingRecord ? 'border-b-2 border-white' : ''}`}>إضافة</button>
           </nav>
         </div>
       </header>
@@ -95,12 +101,12 @@ const App: React.FC = () => {
 
       {loading && (
         <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[55] flex flex-col items-center justify-center">
-          <div className="w-16 h-16 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-emerald-800 font-bold text-lg">جاري تحميل البيانات الحقيقية...</p>
+          <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="mt-4 text-emerald-800 font-bold">جاري تحميل البيانات...</p>
         </div>
       )}
 
-      <main>
+      <main className="animate-in fade-in duration-500">
         {view === 'list' ? (
           <RecordList 
             records={records} 
@@ -118,7 +124,7 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-slate-400 text-xs sm:text-sm">
+      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-slate-400 text-xs">
         نظام إدارة الأنشطة الرمضانية 1447هـ - توثيق المساجد
       </footer>
     </div>
