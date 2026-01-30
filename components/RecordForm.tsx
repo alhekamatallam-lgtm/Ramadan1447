@@ -8,11 +8,12 @@ interface RecordFormProps {
   initialData?: MosqueRecord | null;
   mosques: MosqueInfo[];
   days: DayInfo[];
+  existingRecords: MosqueRecord[];
   onSave: (data: Partial<MosqueRecord>) => void;
   onCancel: () => void;
 }
 
-const RecordForm: React.FC<RecordFormProps> = ({ initialData, mosques, days, onSave, onCancel }) => {
+const RecordForm: React.FC<RecordFormProps> = ({ initialData, mosques, days, existingRecords, onSave, onCancel }) => {
   const [formData, setFormData] = useState<MosqueRecord>(INITIAL_RECORD);
   const [enteredPassword, setEnteredPassword] = useState('');
   const [isPasswordCorrect, setIsPasswordCorrect] = useState(false);
@@ -30,12 +31,8 @@ const RecordForm: React.FC<RecordFormProps> = ({ initialData, mosques, days, onS
         }
       });
       setFormData(sanitized);
-      
-      // في حالة التعديل، نبحث عن المشرف المرتبط بالمسجد
       const mosque = mosques.find(m => m.mosque_code === initialData.mosque_code);
-      if (mosque) {
-        setSelectedSupervisorId(mosque.mosque_code);
-      }
+      if (mosque) setSelectedSupervisorId(mosque.mosque_code);
     } else {
       setFormData({
         ...INITIAL_RECORD,
@@ -45,20 +42,18 @@ const RecordForm: React.FC<RecordFormProps> = ({ initialData, mosques, days, onS
     }
   }, [initialData, mosques]);
 
-  // التحقق من كلمة المرور عند تغيير المشرف أو الكلمة نفسها
   useEffect(() => {
     const currentMosque = mosques.find(m => m.mosque_code === selectedSupervisorId);
     if (currentMosque && enteredPassword) {
-      // مقارنة كلمة المرور (تحويل كلاهما لنص للمقارنة الصحيحة)
-      if (String(currentMosque.pwd) === String(enteredPassword)) {
-        setIsPasswordCorrect(true);
-      } else {
-        setIsPasswordCorrect(false);
-      }
+      setIsPasswordCorrect(String(currentMosque.pwd) === String(enteredPassword));
     } else {
       setIsPasswordCorrect(false);
     }
   }, [enteredPassword, selectedSupervisorId, mosques]);
+
+  const availableDays = !formData.mosque_code ? days : days.filter(d => 
+    !existingRecords.some(r => r.mosque_code === formData.mosque_code && r.code_day === d.code_day && r.record_id !== formData.record_id)
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
@@ -72,21 +67,13 @@ const RecordForm: React.FC<RecordFormProps> = ({ initialData, mosques, days, onS
     const code = e.target.value;
     setSelectedSupervisorId(code);
     const mosque = mosques.find(m => m.mosque_code === code);
-    
-    if (mosque) {
-      setFormData(prev => ({
-        ...prev,
-        mosque_code: mosque.mosque_code,
-        المسجد: mosque.المسجد
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        mosque_code: '',
-        المسجد: ''
-      }));
-    }
-    // إعادة تعيين كلمة المرور عند تغيير المشرف
+    setFormData(prev => ({
+      ...prev,
+      mosque_code: mosque?.mosque_code || '',
+      المسجد: mosque?.المسجد || '',
+      code_day: '',
+      label_day: ''
+    }));
     setEnteredPassword('');
   };
 
@@ -101,19 +88,12 @@ const RecordForm: React.FC<RecordFormProps> = ({ initialData, mosques, days, onS
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!isPasswordCorrect) {
-      alert('عذراً، كلمة المرور غير صحيحة للمشرف المختار');
-      return;
-    }
-
+    if (!isPasswordCorrect) return;
     if (isEditing) {
       const diff: Partial<MosqueRecord> = { record_id: formData.record_id };
       Object.keys(formData).forEach(key => {
         const k = key as keyof MosqueRecord;
-        if (formData[k] !== initialData?.[k]) {
-          (diff[k] as any) = formData[k];
-        }
+        if (formData[k] !== initialData?.[k]) (diff[k] as any) = formData[k];
       });
       onSave(diff);
     } else {
@@ -121,171 +101,91 @@ const RecordForm: React.FC<RecordFormProps> = ({ initialData, mosques, days, onS
     }
   };
 
-  const InputField = ({ label, name, type = 'number', placeholder = '' }: { label: string, name: keyof MosqueRecord, type?: string, placeholder?: string }) => (
-    <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-slate-600 pr-1">{label}</label>
+  const InputField = ({ label, name, type = 'number' }: { label: string, name: keyof MosqueRecord, type?: string }) => (
+    <div className="flex flex-col gap-2">
+      <label className="text-xs font-black text-slate-400 uppercase tracking-wider pr-1">{label}</label>
       <input
         type={type}
         name={name}
         value={formData[name] as any}
         onChange={handleChange}
-        placeholder={placeholder}
         disabled={!isPasswordCorrect && name !== 'ملاحظات'}
-        className={`px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all ${!isPasswordCorrect ? 'bg-slate-50 opacity-60 cursor-not-allowed' : 'bg-white'}`}
+        className={`px-4 py-3.5 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all font-bold ${!isPasswordCorrect ? 'bg-slate-50 opacity-50 cursor-not-allowed' : 'bg-white shadow-sm hover:border-emerald-200'}`}
         min={type === 'number' ? 0 : undefined}
       />
     </div>
   );
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-6xl mx-auto py-8 px-4 sm:px-6">
-      <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto py-6 px-4 pb-32">
+      {/* رأس النموذج */}
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">{isEditing ? 'تعديل سجل نشاط' : 'إضافة سجل نشاط جديد'}</h2>
-          <p className="text-slate-500 mt-1">مشروع رمضان 1447هـ - توثيق الأنشطة اليومية</p>
+          <h2 className="text-2xl font-black text-slate-900">{isEditing ? 'تعديل السجل' : 'تقرير جديد'}</h2>
+          <p className="text-slate-400 text-xs font-bold mt-1">مشروع رمضان 1447هـ</p>
         </div>
-        <div className="flex gap-3 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 sm:flex-none px-6 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
-          >
-            إلغاء
-          </button>
-          <button
-            type="submit"
-            disabled={!isPasswordCorrect}
-            className={`flex-1 sm:flex-none px-8 py-2.5 text-white font-bold rounded-xl shadow-lg transition-all ${isPasswordCorrect ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200' : 'bg-slate-400 cursor-not-allowed opacity-70'}`}
-          >
-            {isEditing ? 'تحديث البيانات' : 'حفظ السجل'}
-          </button>
+        <button type="button" onClick={onCancel} className="p-3 bg-white text-slate-400 rounded-2xl border border-slate-100 shadow-sm active:bg-slate-50">
+           إلغاء
+        </button>
+      </div>
+
+      {/* التحقق من الهوية */}
+      <div className="bg-emerald-900 rounded-[2.5rem] p-6 mb-8 text-white shadow-xl shadow-emerald-900/20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 -mr-12 -mt-12 w-32 h-32 bg-emerald-800 rounded-full blur-2xl"></div>
+        <h3 className="text-lg font-black mb-6 flex items-center gap-3 relative z-10">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+          التحقق من الصلاحية
+        </h3>
+        <div className="space-y-4 relative z-10">
+           <select value={selectedSupervisorId} onChange={handleSupervisorChange} required className="w-full px-5 py-4 bg-emerald-800/50 border border-emerald-700/50 rounded-[1.5rem] outline-none focus:ring-2 focus:ring-emerald-400 font-bold text-sm appearance-none">
+             <option value="">اختر المشرف الميداني...</option>
+             {mosques.map(m => <option key={m.mosque_code} value={m.mosque_code}>{m.supervisor_name} - {m.المسجد}</option>)}
+           </select>
+           <div className="relative">
+             <input type="password" value={enteredPassword} onChange={(e) => setEnteredPassword(e.target.value)} placeholder="كلمة المرور" className={`w-full px-5 py-4 bg-emerald-800/50 border border-emerald-700/50 rounded-[1.5rem] outline-none focus:ring-2 focus:ring-emerald-400 font-bold text-sm tracking-widest ${isPasswordCorrect ? 'ring-2 ring-emerald-400' : ''}`} />
+             {isPasswordCorrect && <span className="absolute left-4 inset-y-0 flex items-center text-emerald-400 font-black">✓</span>}
+           </div>
         </div>
       </div>
 
-      {/* قسم صلاحية الوصول */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-6 mb-8">
-        <div className="flex items-center gap-2 mb-4 text-emerald-800">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <h3 className="text-lg font-bold">صلاحية الوصول والتحقق</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-600">اختيار المشرف المسجل</label>
-            <select
-              value={selectedSupervisorId}
-              onChange={handleSupervisorChange}
-              required
-              className="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
-            >
-              <option value="">اختر المشرف...</option>
-              {mosques.filter(m => m.supervisor_name).map(m => (
-                <option key={m.mosque_code} value={m.mosque_code}>
-                  {m.supervisor_name} - ({m.المسجد})
-                </option>
-              ))}
+      <div className={!isPasswordCorrect ? 'opacity-30 grayscale pointer-events-none' : 'transition-all duration-500'}>
+        <InputGroup title="المعلومات الأساسية" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" /></svg>}>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-wider pr-1">اليوم الرمضاني</label>
+            <select name="code_day" value={formData.code_day} onChange={handleDayChange} required className="px-4 py-3.5 border border-slate-100 rounded-2xl bg-white shadow-sm font-bold outline-none focus:ring-2 focus:ring-emerald-500/20">
+              <option value="">اختر اليوم...</option>
+              {availableDays.map(d => <option key={d.code_day} value={d.code_day}>{d.label}</option>)}
             </select>
           </div>
+          <InputField label="التاريخ الهجري" name="تاريخ_هجري" type="text" />
+        </InputGroup>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-600">كلمة المرور</label>
-            <div className="relative">
-              <input
-                type="password"
-                value={enteredPassword}
-                onChange={(e) => setEnteredPassword(e.target.value)}
-                placeholder="أدخل كلمة المرور"
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 outline-none transition-all ${enteredPassword ? (isPasswordCorrect ? 'border-emerald-500 focus:ring-emerald-200 bg-emerald-50' : 'border-red-300 focus:ring-red-100 bg-red-50') : 'border-slate-200 focus:ring-emerald-500'}`}
-              />
-              {enteredPassword && (
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-                  {isPasswordCorrect ? (
-                    <span className="text-emerald-600 text-xs font-bold">✓ صحيح</span>
-                  ) : (
-                    <span className="text-red-500 text-xs font-bold">✗ خطأ</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+        <InputGroup title="أعداد المصلين" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3.005 3.005 0 013.75-2.906z" /></svg>}>
+          <InputField label="مصلين (رجال)" name="عدد_المصلين_رجال" />
+          <InputField label="مصلين (نساء)" name="عدد_المصلين_نساء" />
+        </InputGroup>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-600">المسجد المرتبط (تلقائي)</label>
-            <input
-              type="text"
-              value={formData.المسجد}
-              readOnly
-              className="px-4 py-2 border border-slate-100 bg-slate-100/50 rounded-lg text-slate-500 italic"
-              placeholder="سيظهر اسم المسجد هنا..."
-            />
-          </div>
+        <InputGroup title="الضيافة والإفطار" icon={<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>}>
+          <InputField label="وجبات الإفطار" name="عدد_وجبات_افطار" />
+          <InputField label="كراتين الماء" name="عدد_كراتين_ماء" />
+          <InputField label="مستفيدي الضيافة" name="عدد_مستفيدي_الضيافة" />
+        </InputGroup>
+
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mb-20">
+          <label className="text-xs font-black text-slate-400 uppercase tracking-wider mb-3 block">ملاحظات المشرف</label>
+          <textarea name="ملاحظات" value={formData.ملاحظات} onChange={handleChange} rows={3} className="w-full px-4 py-4 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 font-medium" placeholder="اكتب أي ملاحظات هنا..." />
         </div>
       </div>
 
-      <div className={!isPasswordCorrect ? 'opacity-40 grayscale pointer-events-none' : 'transition-all duration-500'}>
-        <InputGroup title="المعلومات الأساسية">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-600 pr-1">اليوم</label>
-            <select
-              name="code_day"
-              value={formData.code_day}
-              onChange={handleDayChange}
-              required
-              className="px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white"
-            >
-              <option value="">اختر اليوم من القائمة...</option>
-              {days.map(day => (
-                <option key={day.code_day} value={day.code_day}>{day.label}</option>
-              ))}
-            </select>
-          </div>
-          <InputField label="التاريخ الهجري" name="تاريخ_هجري" type="text" placeholder="مثلاً: 01/09/1447" />
-        </InputGroup>
-
-        <InputGroup title="أعداد المصلين">
-          <InputField label="عدد المصلين (رجال)" name="عدد_المصلين_رجال" />
-          <InputField label="عدد المصلين (نساء)" name="عدد_المصلين_نساء" />
-        </InputGroup>
-
-        <InputGroup title="الضيافة والإفطار">
-          <InputField label="عدد وجبات الإفطار" name="عدد_وجبات_افطار" />
-          <InputField label="عدد كراتين الماء" name="عدد_كراتين_ماء" />
-          <InputField label="عدد مستفيدي الضيافة" name="عدد_مستفيدي_الضيافة" />
-        </InputGroup>
-
-        <InputGroup title="حلقات القرآن">
-          <InputField label="عدد طلاب الحلقات" name="عدد_طلاب_الحلقات" />
-          <InputField label="عدد الأوجه (طلاب)" name="عدد_الاوجه_طلاب" />
-          <InputField label="عدد طالبات الحلقات" name="عدد_طالبات_الحلقات" />
-          <InputField label="عدد الأوجه (طالبات)" name="عدد_الاوجه_طالبات" />
-        </InputGroup>
-
-        <InputGroup title="الكلمات والمحاضرات">
-          <InputField label="الكلمات الرجالية" name="عدد_الكلمات_الرجالية" />
-          <InputField label="الكلمات النسائية" name="عدد_الكلمات_النسائية" />
-          <InputField label="إجمالي مستفيدي الكلمات" name="عدد_مستفيدي_الكلمات" />
-        </InputGroup>
-
-        <InputGroup title="أخرى">
-          <InputField label="عدد المتطوعين" name="عدد_المتطوعين" />
-          <InputField label="عدد المسابقات" name="عدد_المسابقات" />
-          <InputField label="أطفال الحضانة" name="عدد_اطفال_الحضانة" />
-          <InputField label="المعتكفين (رجال)" name="عدد_المعتكفين_رجال" />
-          <InputField label="المعتكفات (نساء)" name="عدد_المعتكفين_نساء" />
-        </InputGroup>
-
-        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-20">
-          <h3 className="text-lg font-bold text-slate-800 mb-4 pb-2 border-b border-slate-50">ملاحظات إضافية</h3>
-          <textarea
-            name="ملاحظات"
-            value={formData.ملاحظات}
-            onChange={handleChange}
-            rows={4}
-            className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white"
-            placeholder="أدخل أي ملاحظات إضافية هنا..."
-          />
-        </div>
+      {/* زر الحفظ العائم للجوال */}
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none">
+        <button
+          onClick={handleSubmit}
+          disabled={!isPasswordCorrect}
+          className={`w-full py-5 rounded-[2rem] text-white font-black text-lg shadow-2xl pointer-events-auto transition-all active:scale-95 ${isPasswordCorrect ? 'bg-emerald-600 shadow-emerald-200' : 'bg-slate-300 opacity-50 cursor-not-allowed'}`}
+        >
+          {isEditing ? 'تحديث البيانات' : 'حفظ التقرير'}
+        </button>
       </div>
     </form>
   );

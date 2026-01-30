@@ -4,11 +4,12 @@ import { mosqueApi } from './services/api';
 import { MosqueRecord, MosqueInfo, DayInfo } from './types';
 import RecordList from './components/RecordList';
 import RecordForm from './components/RecordForm';
+import Dashboard from './components/Dashboard';
 
-type ViewState = 'list' | 'form';
+type ViewState = 'dashboard' | 'list' | 'form';
 
 const App: React.FC = () => {
-  const [view, setView] = useState<ViewState>('list');
+  const [view, setView] = useState<ViewState>('dashboard');
   const [records, setRecords] = useState<MosqueRecord[]>([]);
   const [mosquesList, setMosquesList] = useState<MosqueInfo[]>([]);
   const [daysList, setDaysList] = useState<DayInfo[]>([]);
@@ -19,20 +20,16 @@ const App: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      console.log('Fetching data from API...');
       const response = await mosqueApi.getAll();
-      console.log('API Response:', response);
-      
       if (response && response.success && response.sheets) {
         setRecords(response.sheets.daily_mosque_report || []);
         setMosquesList(response.sheets.mosque || []);
         setDaysList(response.sheets.Dayd || []);
       } else {
-        throw new Error('Invalid data structure from API');
+        throw new Error('Invalid data structure');
       }
     } catch (error) {
-      console.error('Data loading error:', error);
-      showNotification('خطأ في تحميل البيانات من السيرفر، تأكد من إعدادات الـ API', 'error');
+      showNotification('خطأ في تحميل البيانات', 'error');
     } finally {
       setLoading(false);
     }
@@ -56,7 +53,7 @@ const App: React.FC = () => {
       setEditingRecord(null);
       await fetchData(); 
     } catch (error) {
-      showNotification('حدث خطأ أثناء محاولة الحفظ، يرجى التحقق من الاتصال', 'error');
+      showNotification('حدث خطأ أثناء الحفظ', 'error');
     } finally {
       setLoading(false);
     }
@@ -73,59 +70,102 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <header className="bg-emerald-800 text-white shadow-lg sticky top-0 z-50">
+    <div className="min-h-screen bg-[#f1f5f9] pb-20 font-['Tajawal']">
+      <header className="bg-emerald-900 text-white shadow-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-white/10 p-2 rounded-lg">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-emerald-700/50 p-2 rounded-xl border border-emerald-600/30">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-emerald-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
-            <h1 className="font-bold text-lg sm:text-xl tracking-tight">إدارة مساجد رمضان 1447هـ</h1>
+            <div>
+              <h1 className="font-bold text-lg leading-tight tracking-tight">مشروع رمضان 1447هـ</h1>
+              <p className="text-[10px] text-emerald-300 uppercase tracking-widest opacity-80">نظام إدارة أنشطة المساجد</p>
+            </div>
           </div>
           
-          <nav className="flex items-center gap-4 sm:gap-6">
-            <button onClick={() => setView('list')} className={`text-sm sm:text-base hover:text-emerald-200 transition-colors ${view === 'list' ? 'border-b-2 border-white' : ''}`}>الرئيسية</button>
-            <button onClick={handleAddNew} className={`text-sm sm:text-base hover:text-emerald-200 transition-colors ${view === 'form' && !editingRecord ? 'border-b-2 border-white' : ''}`}>إضافة</button>
+          <nav className="flex items-center bg-white/5 rounded-full px-2 py-1 border border-white/10">
+            <button 
+              onClick={() => setView('dashboard')} 
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-white text-emerald-900 shadow-lg' : 'text-white/70 hover:text-white'}`}
+            >
+              الرئيسية
+            </button>
+            <button 
+              onClick={() => setView('list')} 
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${view === 'list' ? 'bg-white text-emerald-900 shadow-lg' : 'text-white/70 hover:text-white'}`}
+            >
+              السجلات
+            </button>
+            <button 
+              onClick={handleAddNew} 
+              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${view === 'form' && !editingRecord ? 'bg-white text-emerald-900 shadow-lg' : 'text-white/70 hover:text-white'}`}
+            >
+              إضافة
+            </button>
           </nav>
         </div>
       </header>
 
       {notification && (
-        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[60] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-bounce
+        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[60] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top duration-300
           ${notification.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-          <span className="font-bold">{notification.message}</span>
+          <div className="p-1 bg-white/20 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <span className="font-bold text-sm">{notification.message}</span>
         </div>
       )}
 
       {loading && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm z-[55] flex flex-col items-center justify-center">
-          <div className="w-12 h-12 border-4 border-emerald-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="mt-4 text-emerald-800 font-bold">جاري تحميل البيانات...</p>
+        <div className="fixed inset-0 bg-slate-900/10 backdrop-blur-sm z-[55] flex flex-col items-center justify-center">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+               <span className="text-[10px] font-bold text-emerald-800 animate-pulse">1447</span>
+            </div>
+          </div>
+          <p className="mt-6 text-emerald-900 font-bold bg-white/80 px-6 py-2 rounded-full shadow-sm">جاري مزامنة البيانات...</p>
         </div>
       )}
 
-      <main className="animate-in fade-in duration-500">
-        {view === 'list' ? (
+      <main className="animate-in fade-in zoom-in-95 duration-500">
+        {view === 'dashboard' && (
+          <Dashboard 
+            records={records} 
+            mosques={mosquesList} 
+            days={daysList}
+            onNavigateToRecords={() => setView('list')}
+            onNavigateToAdd={() => handleAddNew()}
+          />
+        )}
+        {view === 'list' && (
           <RecordList 
             records={records} 
             onEdit={handleEdit} 
             onAddNew={handleAddNew} 
           />
-        ) : (
+        )}
+        {view === 'form' && (
           <RecordForm 
             initialData={editingRecord} 
             mosques={mosquesList}
             days={daysList}
+            existingRecords={records}
             onSave={handleSave} 
             onCancel={() => { setView('list'); setEditingRecord(null); }} 
           />
         )}
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 text-center text-slate-400 text-xs">
-        نظام إدارة الأنشطة الرمضانية 1447هـ - توثيق المساجد
+      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-3 text-center">
+        <div className="flex justify-center items-center gap-2 text-slate-400 text-xs font-medium">
+          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
+          نظام التوثيق الميداني - رمضان 1447هـ
+        </div>
       </footer>
     </div>
   );
