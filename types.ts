@@ -6,10 +6,12 @@ export interface MosqueRecord {
   label_day: string;
   mosque_code: string;
   المسجد: string;
+  "نوع الموقع": string;
   تاريخ_هجري: string;
   عدد_المصلين_رجال: number | string;
   عدد_المصلين_نساء: number | string;
-  عدد_وجبات_افطار: number | string;
+  عدد_وجبات_افطار_المدعومة: number | string;
+  عدد_وجبات_الافطار_فعلي: number | string;
   عدد_كراتين_ماء: number | string;
   عدد_مستفيدي_الضيافة: number | string;
   عدد_طلاب_الحلقات: number | string;
@@ -17,19 +19,40 @@ export interface MosqueRecord {
   عدد_طالبات_الحلقات: number | string;
   عدد_الاوجه_طالبات: number | string;
   عدد_المتطوعين: number | string;
+  "عدد المشرفين": number | string;
   عدد_المسابقات: number | string;
   عدد_اطفال_الحضانة: number | string;
   عدد_الكلمات_الرجالية: number | string;
   عدد_الكلمات_النسائية: number | string;
   عدد_مستفيدي_الكلمات: number | string;
   عدد_المعتكفين_رجال: number | string;
+  عدد_وجبات_السحور_رجال: number | string;
   عدد_المعتكفين_نساء: number | string;
+  عدد_وجبات_السحور_نساء: number | string;
   ملاحظات: string;
+}
+
+export interface MaintenanceRecord {
+  record_id: string;
+  mosque_code?: string;
+  المسجد?: string;
+  اليوم: string;
+  التاريخ: string;
+  أعمال_النظافة_عدد: number | string;
+  أعمال_الصيانة_عدد: number | string;
+  عدد_كراتين_الماء_الواقعي: number | string;
+  المبادرات_المقدمة: string;
+  الخدمات_اللوجستية: string;
+  أعمال_النظافة_سرد: string;
+  أعمال_الصيانة_سرد: string;
+  ملاحظات_ومشكلات_ومقترحات: string;
+  created_at?: string;
 }
 
 export interface MosqueInfo {
   mosque_code: string;
   المسجد: string;
+  "نوع الموقع": string;
   supervisor?: string;
   supervisor_name?: string;
   pwd?: number | string;
@@ -46,5 +69,6 @@ export interface ApiResponse {
     daily_mosque_report: MosqueRecord[];
     mosque: MosqueInfo[];
     Dayd: DayInfo[];
+    Maintenance_Report: MaintenanceRecord[];
   };
 }

@@ -1,16 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { mosqueApi } from './services/api';
-import { MosqueRecord, MosqueInfo, DayInfo } from './types';
+import { MosqueRecord, MaintenanceRecord, MosqueInfo, DayInfo } from './types';
 import RecordList from './components/RecordList';
 import RecordForm from './components/RecordForm';
+import MaintenanceForm from './components/MaintenanceForm';
+import MaintenanceDashboard from './components/MaintenanceDashboard';
 import Dashboard from './components/Dashboard';
 
-type ViewState = 'dashboard' | 'list' | 'form';
+type ViewState = 'dashboard' | 'list' | 'form' | 'maintenance' | 'maintenance_list';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('dashboard');
   const [records, setRecords] = useState<MosqueRecord[]>([]);
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
   const [mosquesList, setMosquesList] = useState<MosqueInfo[]>([]);
   const [daysList, setDaysList] = useState<DayInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,6 +26,7 @@ const App: React.FC = () => {
       const response = await mosqueApi.getAll();
       if (response && response.success && response.sheets) {
         setRecords(response.sheets.daily_mosque_report || []);
+        setMaintenanceRecords(response.sheets.Maintenance_Report || []);
         setMosquesList(response.sheets.mosque || []);
         setDaysList(response.sheets.Dayd || []);
       } else {
@@ -44,128 +48,113 @@ const App: React.FC = () => {
     setTimeout(() => setNotification(null), 4000);
   };
 
-  const handleSave = async (data: Partial<MosqueRecord>) => {
+  const handleSave = async (data: any) => {
     setLoading(true);
     try {
       await mosqueApi.save(data);
-      showNotification(editingRecord ? 'تم تحديث البيانات بنجاح' : 'تم إضافة السجل بنجاح', 'success');
-      setView('list');
+      showNotification('تم المزامنة بنجاح', 'success');
+      setView('dashboard');
       setEditingRecord(null);
       await fetchData(); 
     } catch (error) {
-      showNotification('حدث خطأ أثناء الحفظ', 'error');
+      showNotification('فشل في الاتصال بالقاعدة', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleEdit = (record: MosqueRecord) => {
-    setEditingRecord(record);
-    setView('form');
-  };
-
-  const handleAddNew = () => {
-    setEditingRecord(null);
-    setView('form');
-  };
-
   return (
-    <div className="min-h-screen bg-[#f1f5f9] pb-20 font-['Tajawal']">
-      <header className="bg-emerald-900 text-white shadow-xl sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-emerald-700/50 p-2 rounded-xl border border-emerald-600/30">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-emerald-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
+    <div className="min-h-screen bg-[#F8FAFC] pb-24 font-['Tajawal'] text-right" dir="rtl">
+      <header className="bg-[#003366] text-white shadow-xl sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
+          <div className="flex items-center gap-5">
+            <div className="bg-white p-2 rounded-xl shadow-lg transform hover:scale-105 transition-transform">
+              <img src="https://next.rajhifoundation.org/files/52c533df-1.png" alt="شعار الراجحي" className="h-12" />
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight tracking-tight">مشروع رمضان 1447هـ</h1>
-              <p className="text-[10px] text-emerald-300 uppercase tracking-widest opacity-80">نظام إدارة أنشطة المساجد</p>
+              <h1 className="font-black text-xl leading-none">رمضان 1447هـ</h1>
+              <p className="text-[10px] text-[#C5A059] uppercase tracking-[0.2em] font-black mt-1">مؤسسة عبدالله بن عبدالعزيز الراجحي الخيرية</p>
             </div>
           </div>
           
-          <nav className="flex items-center bg-white/5 rounded-full px-2 py-1 border border-white/10">
-            <button 
-              onClick={() => setView('dashboard')} 
-              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-white text-emerald-900 shadow-lg' : 'text-white/70 hover:text-white'}`}
-            >
-              الرئيسية
-            </button>
-            <button 
-              onClick={() => setView('list')} 
-              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${view === 'list' ? 'bg-white text-emerald-900 shadow-lg' : 'text-white/70 hover:text-white'}`}
-            >
-              السجلات
-            </button>
-            <button 
-              onClick={handleAddNew} 
-              className={`px-4 py-1.5 rounded-full text-sm font-bold transition-all ${view === 'form' && !editingRecord ? 'bg-white text-emerald-900 shadow-lg' : 'text-white/70 hover:text-white'}`}
-            >
-              إضافة
-            </button>
+          <nav className="flex items-center bg-white/10 rounded-2xl p-1 gap-1 border border-white/5">
+            <button onClick={() => setView('dashboard')} className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-[#0054A6] text-white shadow-lg' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>الرئيسية</button>
+            <button onClick={() => setView('list')} className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'list' ? 'bg-[#0054A6] text-white shadow-lg' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>السجلات</button>
           </nav>
         </div>
       </header>
 
       {notification && (
-        <div className={`fixed top-20 left-1/2 transform -translate-x-1/2 z-[60] px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top duration-300
-          ${notification.type === 'success' ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}`}>
-          <div className="p-1 bg-white/20 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-            </svg>
+        <div className={`fixed top-28 left-1/2 transform -translate-x-1/2 z-[60] px-8 py-4 rounded-3xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top ${notification.type === 'success' ? 'bg-[#0054A6] text-white' : 'bg-red-600 text-white'}`}>
+          <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+            {notification.type === 'success' ? '✓' : '!'}
           </div>
-          <span className="font-bold text-sm">{notification.message}</span>
+          <span className="font-bold">{notification.message}</span>
         </div>
       )}
 
       {loading && (
-        <div className="fixed inset-0 bg-slate-900/10 backdrop-blur-sm z-[55] flex flex-col items-center justify-center">
-          <div className="relative">
-            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 flex items-center justify-center">
-               <span className="text-[10px] font-bold text-emerald-800 animate-pulse">1447</span>
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-xl z-[100] flex flex-col items-center justify-center">
+          <div className="relative flex items-center justify-center mb-8">
+            <div className="absolute w-32 h-32 bg-[#0054A6]/10 rounded-full animate-ping"></div>
+            <div className="relative bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-100">
+              <img src="https://next.rajhifoundation.org/files/52c533df-1.png" alt="Logo" className="h-16 w-auto" />
             </div>
+            <div className="absolute -bottom-4 w-12 h-12 border-4 border-[#C5A059] border-t-[#0054A6] rounded-full animate-spin"></div>
           </div>
-          <p className="mt-6 text-emerald-900 font-bold bg-white/80 px-6 py-2 rounded-full shadow-sm">جاري مزامنة البيانات...</p>
+          <div className="text-center space-y-2">
+            <p className="text-[#003366] text-xl font-black">جاري المزامنة</p>
+            <p className="text-slate-500 font-bold text-sm animate-pulse tracking-widest">يرجى الانتظار قليلاً...</p>
+          </div>
         </div>
       )}
 
-      <main className="animate-in fade-in zoom-in-95 duration-500">
+      <main className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in">
         {view === 'dashboard' && (
           <Dashboard 
             records={records} 
             mosques={mosquesList} 
-            days={daysList}
-            onNavigateToRecords={() => setView('list')}
-            onNavigateToAdd={() => handleAddNew()}
+            days={daysList} 
+            onNavigateToRecords={() => setView('list')} 
+            onNavigateToAdd={() => setView('form')}
+            onNavigateToMaintenance={() => setView('maintenance_list')}
           />
         )}
         {view === 'list' && (
           <RecordList 
             records={records} 
-            onEdit={handleEdit} 
-            onAddNew={handleAddNew} 
+            onEdit={(r) => {setEditingRecord(r); setView('form');}} 
+            onAddNew={() => {setEditingRecord(null); setView('form');}} 
           />
         )}
         {view === 'form' && (
           <RecordForm 
             initialData={editingRecord} 
-            mosques={mosquesList}
-            days={daysList}
-            existingRecords={records}
+            mosques={mosquesList} 
+            days={daysList} 
+            existingRecords={records} 
             onSave={handleSave} 
-            onCancel={() => { setView('list'); setEditingRecord(null); }} 
+            onCancel={() => setView('dashboard')} 
+          />
+        )}
+        {view === 'maintenance' && (
+          <MaintenanceForm 
+            mosques={mosquesList} 
+            days={daysList} 
+            onSave={handleSave} 
+          />
+        )}
+        {view === 'maintenance_list' && (
+          <MaintenanceDashboard 
+            records={maintenanceRecords}
+            onBack={() => setView('dashboard')}
+            onAddNew={() => setView('maintenance')}
           />
         )}
       </main>
 
-      <footer className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-200 py-3 text-center">
-        <div className="flex justify-center items-center gap-2 text-slate-400 text-xs font-medium">
-          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>
-          نظام التوثيق الميداني - رمضان 1447هـ
-        </div>
+      <footer className="fixed bottom-0 left-0 right-0 bg-[#003366] text-white/50 py-3 text-center border-t border-white/5 backdrop-blur-md z-40">
+        <p className="text-[10px] font-bold uppercase tracking-widest">جميع الحقوق محفوظة لمؤسسة عبدالله بن عبدالعزيز الراجحي الخيرية © 1447هـ</p>
       </footer>
     </div>
   );
