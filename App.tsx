@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { mosqueApi } from './services/api';
-import { MosqueRecord, MaintenanceRecord, MosqueInfo, DayInfo } from './types';
+import { MosqueRecord, MaintenanceRecord, PhotoRecord, MosqueInfo, DayInfo } from './types';
 import RecordList from './components/RecordList';
 import RecordForm from './components/RecordForm';
 import MaintenanceForm from './components/MaintenanceForm';
@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('dashboard');
   const [records, setRecords] = useState<MosqueRecord[]>([]);
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
+  const [photosList, setPhotosList] = useState<PhotoRecord[]>([]);
   const [mosquesList, setMosquesList] = useState<MosqueInfo[]>([]);
   const [daysList, setDaysList] = useState<DayInfo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,6 +28,7 @@ const App: React.FC = () => {
       if (response && response.success && response.sheets) {
         setRecords(response.sheets.daily_mosque_report || []);
         setMaintenanceRecords(response.sheets.Maintenance_Report || []);
+        setPhotosList(response.sheets.photo || []);
         setMosquesList(response.sheets.mosque || []);
         setDaysList(response.sheets.Dayd || []);
       } else {
@@ -115,6 +117,7 @@ const App: React.FC = () => {
             records={records} 
             mosques={mosquesList} 
             days={daysList} 
+            photos={photosList}
             onNavigateToRecords={() => setView('list')} 
             onNavigateToAdd={() => setView('form')}
             onNavigateToMaintenance={() => setView('maintenance_list')}

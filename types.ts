@@ -49,6 +49,14 @@ export interface MaintenanceRecord {
   created_at?: string;
 }
 
+export interface PhotoRecord {
+  public_id: string;
+  secure_url: string;
+  webp_url: string;
+  format: string;
+  tags: string;
+}
+
 export interface MosqueInfo {
   mosque_code: string;
   المسجد: string;
@@ -70,5 +78,6 @@ export interface ApiResponse {
     mosque: MosqueInfo[];
     Dayd: DayInfo[];
     Maintenance_Report: MaintenanceRecord[];
+    photo: PhotoRecord[];
   };
 }

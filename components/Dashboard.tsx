@@ -1,17 +1,19 @@
 
 import React from 'react';
-import { MosqueRecord, MosqueInfo, DayInfo } from '../types';
+import { MosqueRecord, MosqueInfo, DayInfo, PhotoRecord } from '../types';
+import ImageSlider from './ImageSlider';
 
 interface DashboardProps {
   records: MosqueRecord[];
   mosques: MosqueInfo[];
   days: DayInfo[];
+  photos: PhotoRecord[];
   onNavigateToRecords: () => void;
   onNavigateToAdd: () => void;
   onNavigateToMaintenance: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ records, mosques, days, onNavigateToRecords, onNavigateToAdd, onNavigateToMaintenance }) => {
+const Dashboard: React.FC<DashboardProps> = ({ records, mosques, days, photos, onNavigateToRecords, onNavigateToAdd, onNavigateToMaintenance }) => {
   const totalWorshippers = records.reduce((sum, r) => sum + (Number(r.عدد_المصلين_رجال) || 0) + (Number(r.عدد_المصلين_نساء) || 0), 0);
   const totalIftarMeals = records.reduce((sum, r) => sum + (Number(r.عدد_وجبات_افطار_المدعومة) || 0), 0);
   const totalStudents = records.reduce((sum, r) => sum + (Number(r.عدد_طلاب_الحلقات) || 0) + (Number(r.عدد_طالبات_الحلقات) || 0), 0);
@@ -22,6 +24,9 @@ const Dashboard: React.FC<DashboardProps> = ({ records, mosques, days, onNavigat
         <h2 className="text-4xl font-black text-[#003366]">مرحباً بك 🌙</h2>
         <p className="text-[#5a7b9c] font-bold">بوابة الميدان لإدارة أنشطة مساجد مؤسسة عبدالله الراجحي الخيرية</p>
       </div>
+
+      {/* معرض الصور الميداني */}
+      <ImageSlider photos={photos} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <button onClick={onNavigateToAdd} className="group bg-[#0054A6] text-white p-10 rounded-[3rem] shadow-2xl shadow-[#0054A6]/30 flex flex-col items-center text-center gap-6 transition-all active:scale-95 border-b-8 border-[#003366]">
