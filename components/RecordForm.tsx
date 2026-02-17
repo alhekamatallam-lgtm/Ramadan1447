@@ -110,6 +110,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
   const showIftar = isFarm || (!isNight1);
   const showEducation = !isFarm && !isNight1;
   const showMissionary = !isFarm;
+  const showCommunity = !isFarm;
 
   return (
     <div className="max-w-4xl mx-auto space-y-10 pb-40">
@@ -162,7 +163,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
             </div>
           )}
 
-          {/* القسم 4: الإفطار والضيافة - قسم خاص مستفل */}
+          {/* القسم 4: الإفطار والضيافة */}
           {showIftar && (
             <div className="animate-in fade-in">
               <InputGroup title="مشروع الإفطار والضيافة" icon="🍽️">
@@ -174,7 +175,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
             </div>
           )}
 
-          {/* القسم 5: الحلقات - لا يظهر في المزارع ولا في الليلة الأولى */}
+          {/* القسم 5: الحلقات */}
           {showEducation && (
             <div className="animate-in fade-in">
               <InputGroup title="حلقات التحفيظ والمقرأة" icon="📖">
@@ -186,7 +187,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
             </div>
           )}
 
-          {/* القسم 6: الاعتكاف - يظهر فقط من ليلة 20 وللمساجد فقط */}
+          {/* القسم 6: الاعتكاف */}
           {showItikaf && (
             <div className="relative pt-6 animate-in fade-in">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#C5A059] text-white px-8 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] z-10 shadow-lg">العشر الأواخر</div>
@@ -199,7 +200,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
             </div>
           )}
 
-          {/* القسم 7: النشاط الدعوي والميداني - لا يظهر في المزارع */}
+          {/* القسم 7: النشاط الدعوي والميداني */}
           {showMissionary && (
             <div className="animate-in fade-in">
               <InputGroup title="النشاط الدعوي والميداني" icon="🤝">
@@ -214,7 +215,18 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
             </div>
           )}
 
-          {/* القسم 8: الملاحظات - يظهر دائماً */}
+          {/* القسم الجديد: البرامج المجتمعية */}
+          {showCommunity && (
+            <div className="animate-in fade-in">
+              <InputGroup title="البرامج والفعاليات المجتمعية" icon="🎨">
+                <CustomInput label="اسم البرنامج المجتمعي" name="البرنامج_المجتمعي" value={formData.البرنامج_المجتمعي} onChange={handleChange} placeholder="مثال: مسابقة الطفل الرمضانية" />
+                <CustomInput label="عدد المستفيدين" name="عدد_المستفيدين" value={formData.عدد_المستفيدين} onChange={handleChange} isNumeric placeholder="٠" />
+                <CustomInput label="وصف البرنامج" name="وصف_البرنامج" value={formData.وصف_البرنامج} onChange={handleChange} placeholder="وصف مختصر للفعالية..." />
+              </InputGroup>
+            </div>
+          )}
+
+          {/* القسم 8: الملاحظات */}
           <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100">
             <label className="text-[11px] font-black text-[#5a7b9c] uppercase tracking-widest mb-4 block">ملاحظات المشرف الميداني</label>
             <textarea name="ملاحظات" value={formData.ملاحظات} onChange={(e:any) => setFormData(p=>({...p, ملاحظات: e.target.value}))} rows={4} className="w-full px-6 py-5 bg-slate-50 rounded-3xl outline-none focus:bg-white border-2 border-transparent focus:border-[#0054A6] font-bold text-[#003366] transition-all" placeholder="أدخل أي ملاحظات أو تحديات واجهتكم اليوم..." />

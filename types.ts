@@ -29,6 +29,9 @@ export interface MosqueRecord {
   عدد_وجبات_السحور_رجال: number | string;
   عدد_المعتكفين_نساء: number | string;
   عدد_وجبات_السحور_نساء: number | string;
+  البرنامج_المجتمعي: string;
+  عدد_المستفيدين: number | string;
+  وصف_البرنامج: string;
   ملاحظات: string;
 }
 
