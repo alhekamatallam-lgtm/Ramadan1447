@@ -8,17 +8,10 @@ const getTodayHijri = () => {
   try {
     const today = new Date();
     const formatter = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
+      day: 'numeric', month: 'long', year: 'numeric'
     });
     return formatter.format(today).replace('هـ', '').trim();
   } catch (e) { return ""; }
-};
-
-const getDayNumber = (code: string) => {
-  const match = code.match(/\d+/);
-  return match ? parseInt(match[0], 10) : 0;
 };
 
 const convertAndCleanNumbers = (val: string) => {
@@ -27,35 +20,7 @@ const convertAndCleanNumbers = (val: string) => {
   return converted.replace(/[^\d]/g, '');
 };
 
-interface CustomInputProps {
-  label: string;
-  name: keyof MosqueRecord;
-  value: string | number;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  isNumeric?: boolean;
-  readOnly?: boolean;
-  placeholder?: string;
-}
-
-const CustomInput: React.FC<CustomInputProps> = ({ label, name, value, onChange, isNumeric = false, readOnly = false, placeholder = "٠" }) => (
-  <div className="flex flex-col gap-2 group">
-    <label className="text-[10px] font-black text-slate-500 group-focus-within:text-[#0054A6] uppercase tracking-widest pr-1 transition-colors">{label}</label>
-    <input
-      type="text"
-      inputMode={isNumeric ? "numeric" : "text"}
-      name={name as string}
-      value={value ?? ''}
-      onChange={onChange}
-      readOnly={readOnly}
-      placeholder={placeholder}
-      className={`w-full px-6 py-4 border-2 rounded-2xl outline-none transition-all font-bold shadow-sm ${
-        readOnly ? 'bg-slate-50 border-slate-100 text-slate-400' : 'bg-white border-slate-100 text-[#003366] focus:border-[#0054A6] focus:ring-4 focus:ring-[#0054A6]/5'
-      }`}
-    />
-  </div>
-);
-
-const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCancel }) => {
+const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave, onCancel }) => {
   const [formData, setFormData] = useState<MosqueRecord>(INITIAL_RECORD);
   const [enteredPassword, setEnteredPassword] = useState('');
   const [isPasswordCorrect, setIsPasswordCorrect] = useState(false);
@@ -65,19 +30,18 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
     if (initialData) {
       setFormData({ ...initialData });
       setSelectedMosqueCode(initialData.mosque_code);
+      if (isAdmin) setIsPasswordCorrect(true);
     } else {
       setFormData({ ...INITIAL_RECORD, record_id: `MRJ-${Date.now()}`, تاريخ_هجري: getTodayHijri() });
     }
-  }, [initialData]);
+  }, [initialData, isAdmin]);
 
   useEffect(() => {
+    if (isAdmin) return;
     const mosque = mosques.find(m => m.mosque_code === selectedMosqueCode);
-    if (mosque && enteredPassword) {
-        setIsPasswordCorrect(String(mosque.pwd).trim() === enteredPassword.trim());
-    } else {
-        setIsPasswordCorrect(false);
-    }
-  }, [enteredPassword, selectedMosqueCode, mosques]);
+    // دعم كلمة المرور سواء كانت نص أو رقم من الـ API
+    setIsPasswordCorrect(mosque && String(mosque.pwd).trim() === String(enteredPassword).trim());
+  }, [enteredPassword, selectedMosqueCode, mosques, isAdmin]);
 
   const handleChange = (e: any) => {
     const { name, value, inputMode } = e.target;
@@ -91,163 +55,93 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, onSave, onCance
     const code = e.target.value;
     setSelectedMosqueCode(code);
     const mosque = mosques.find(m => m.mosque_code === code);
-    setFormData(prev => ({ 
+    if (mosque) {
+      setFormData(prev => ({ 
         ...prev, 
         mosque_code: code, 
-        المسجد: mosque?.المسجد || '', 
-        "نوع الموقع": mosque?.["نوع الموقع"] || '' 
-    }));
-    setEnteredPassword('');
+        المسجد: mosque.المسجد,
+        "نوع الموقع": mosque["نوع الموقع"]
+      }));
+    }
   };
 
-  const dayNum = getDayNumber(formData.code_day);
-  const isNight1 = dayNum === 1;
   const isFarm = formData["نوع الموقع"] === "مزرعة";
-  const showItikaf = dayNum >= 20 && !isFarm;
-
-  // منطق الظهور للأقسام
-  const showWorshippers = !isFarm;
-  const showIftar = isFarm || (!isNight1);
-  const showEducation = !isFarm && !isNight1;
-  const showMissionary = !isFarm;
-  const showCommunity = !isFarm;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10 pb-40">
-      {/* القسم 1: الهوية والتحقق */}
-      <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-2 h-full bg-[#C5A059]"></div>
-        <h3 className="text-2xl font-black text-[#003366] mb-8 flex items-center gap-3">
-          <span className="w-10 h-10 bg-[#0054A6]/10 rounded-xl flex items-center justify-center text-xl">👤</span>
-          بيانات المشرف والتحقق
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">المسجد / الموقع</label>
-            <select value={selectedMosqueCode} onChange={handleMosqueChange} className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#0054A6] font-bold text-[#003366] appearance-none shadow-inner">
-              <option value="">اختر المسجد المسجل باسمك...</option>
-              {mosques.map(m => <option key={m.mosque_code} value={m.mosque_code}>{m.supervisor_name} - {m.المسجد} ({m["نوع الموقع"]})</option>)}
+    <div className="max-w-4xl mx-auto space-y-10 pb-40 animate-in fade-in">
+      {!isAdmin && (
+        <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100">
+          <h3 className="text-xl font-black text-[#003366] mb-8">👤 بيانات المشرف الميداني</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <select value={selectedMosqueCode} onChange={handleMosqueChange} className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl font-bold outline-none focus:border-[#0054A6]">
+              <option value="">اختر المسجد...</option>
+              {mosques.map(m => <option key={m.mosque_code} value={m.mosque_code}>{m.المسجد}</option>)}
             </select>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">كلمة المرور</label>
-            <input type="password" value={enteredPassword} onChange={(e) => setEnteredPassword(e.target.value)} placeholder="••••••••" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl outline-none focus:bg-white focus:border-[#0054A6] font-bold tracking-widest shadow-inner" />
+            <input type="password" value={enteredPassword} onChange={(e) => setEnteredPassword(e.target.value)} placeholder="كلمة المرور" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
           </div>
         </div>
-      </div>
+      )}
 
-      {isPasswordCorrect ? (
+      {(isPasswordCorrect || isAdmin) && (
         <div className="space-y-8 animate-in fade-in">
-          {/* القسم 2: الوقت واليوم */}
-          <InputGroup title="الوقت واليوم" icon="⏰">
+          <InputGroup title="الوقت والموقع" icon="⏰">
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ليلة اليوم الرمضاني</label>
-              <select name="code_day" value={formData.code_day} onChange={(e) => {
-                const day = days.find(d => d.code_day === e.target.value);
-                setFormData(prev => ({ ...prev, code_day: e.target.value, label_day: day?.label || '' }));
-              }} className="px-6 py-4 border-2 border-slate-100 rounded-2xl bg-white font-bold outline-none focus:border-[#0054A6] shadow-sm">
-                <option value="">اختر اليوم...</option>
-                {days.map(d => <option key={d.code_day} value={d.code_day}>{d.label}</option>)}
-              </select>
+               <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">اليوم / الليلة</label>
+               <select name="label_day" value={formData.label_day} onChange={(e) => {
+                 const d = days.find(x => x.code_day === e.target.value);
+                 // وفقاً للهيكلية في مثالك: code_day يأخذ المسمى العربي و label_day يأخذ الكود الإنجليزي
+                 setFormData(p => ({ ...p, label_day: e.target.value, code_day: d?.label || '' }));
+               }} className="px-6 py-4 border-2 rounded-2xl bg-white font-bold outline-none focus:border-[#0054A6]">
+                 <option value="">اختر من القائمة...</option>
+                 {days.map(d => <option key={d.code_day} value={d.code_day}>{d.label}</option>)}
+               </select>
             </div>
-            <CustomInput label="التاريخ الهجري" name="تاريخ_هجري" value={formData.تاريخ_هجري} onChange={handleChange} readOnly />
+            <div className="flex flex-col gap-2">
+               <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">التاريخ الهجري</label>
+               <input type="text" value={formData.تاريخ_هجري} readOnly className="px-6 py-4 bg-slate-50 rounded-2xl text-slate-400 font-bold" />
+            </div>
           </InputGroup>
 
-          {/* القسم 3: المصلين - لا يظهر في المزارع */}
-          {showWorshippers && (
-            <div className="animate-in fade-in">
-              <InputGroup title="إحصائيات المصلين" icon="🕌">
-                <CustomInput label="عدد المصلين (رجال)" name="عدد_المصلين_رجال" value={formData.عدد_المصلين_رجال} onChange={handleChange} isNumeric />
-                <CustomInput label="عدد المصلين (نساء)" name="عدد_المصلين_نساء" value={formData.عدد_المصلين_نساء} onChange={handleChange} isNumeric />
-              </InputGroup>
+          <InputGroup title="إحصائيات المصلين والإفطار" icon="🕌">
+            {!isFarm && <input type="text" inputMode="numeric" name="عدد_المصلين_رجال" value={formData.عدد_المصلين_رجال} onChange={handleChange} placeholder="المصلين رجال" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />}
+            {!isFarm && <input type="text" inputMode="numeric" name="عدد_المصلين_نساء" value={formData.عدد_المصلين_نساء} onChange={handleChange} placeholder="المصلين نساء" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />}
+            <input type="text" inputMode="numeric" name="عدد_وجبات_افطار_المدعومة" value={formData.عدد_وجبات_افطار_المدعومة} onChange={handleChange} placeholder="وجبات إفطار مدعومة" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+            <input type="text" inputMode="numeric" name="عدد_وجبات_الافطار_فعلي" value={formData.عدد_وجبات_الافطار_فعلي} onChange={handleChange} placeholder="وجبات إفطار فعلي" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+            <input type="text" inputMode="numeric" name="عدد_كراتين_ماء" value={formData.عدد_كراتين_ماء} onChange={handleChange} placeholder="عدد كراتين الماء" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+          </InputGroup>
+
+          {isAdmin && (
+            <div className="bg-[#003366] p-10 rounded-[3rem] shadow-2xl text-white animate-in slide-in-from-bottom">
+              <h3 className="text-xl font-black mb-6 flex items-center gap-3">
+                <span className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">🔐</span>
+                اعتماد التقرير (للمسؤول)
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                 {['قيد المراجعة', 'معتمد', 'يعاد التقرير'].map(status => (
+                   <button 
+                     key={status}
+                     onClick={() => setFormData(p => ({ ...p, الاعتماد: status }))}
+                     className={`py-4 rounded-2xl font-black transition-all border-2 ${
+                       formData.الاعتماد === status ? 'bg-[#C5A059] border-[#C5A059] text-[#003366]' : 'bg-white/5 border-white/20 hover:bg-white/10'
+                     }`}
+                   >
+                     {status}
+                   </button>
+                 ))}
+              </div>
             </div>
           )}
 
-          {/* القسم 4: الإفطار والضيافة */}
-          {showIftar && (
-            <div className="animate-in fade-in">
-              <InputGroup title="مشروع الإفطار والضيافة" icon="🍽️">
-                <CustomInput label="إفطار مدعوم (وجبات)" name="عدد_وجبات_افطار_المدعومة" value={formData.عدد_وجبات_افطار_المدعومة} onChange={handleChange} isNumeric />
-                <CustomInput label="إفطار فعلي (وجبات)" name="عدد_وجبات_الافطار_فعلي" value={formData.عدد_وجبات_الافطار_فعلي} onChange={handleChange} isNumeric />
-                <CustomInput label="كراتين الماء الموزعة" name="عدد_كراتين_ماء" value={formData.عدد_كراتين_ماء} onChange={handleChange} isNumeric />
-                <CustomInput label="مستفيدي الضيافة" name="عدد_مستفيدي_الضيافة" value={formData.عدد_مستفيدي_الضيافة} onChange={handleChange} isNumeric />
-              </InputGroup>
-            </div>
-          )}
-
-          {/* القسم 5: الحلقات */}
-          {showEducation && (
-            <div className="animate-in fade-in">
-              <InputGroup title="حلقات التحفيظ والمقرأة" icon="📖">
-                <CustomInput label="عدد الطلاب (بنين)" name="عدد_طلاب_الحلقات" value={formData.عدد_طلاب_الحلقات} onChange={handleChange} isNumeric />
-                <CustomInput label="أوجه الحفظ (بنين)" name="عدد_الاوجه_طلاب" value={formData.عدد_الاوجه_طلاب} onChange={handleChange} isNumeric />
-                <CustomInput label="عدد الطالبات (بنات)" name="عدد_طالبات_الحلقات" value={formData.عدد_طالبات_الحلقات} onChange={handleChange} isNumeric />
-                <CustomInput label="أوجه الحفظ (بنات)" name="عدد_الاوجه_طالبات" value={formData.عدد_الاوجه_طالبات} onChange={handleChange} isNumeric />
-              </InputGroup>
-            </div>
-          )}
-
-          {/* القسم 6: الاعتكاف */}
-          {showItikaf && (
-            <div className="relative pt-6 animate-in fade-in">
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 bg-[#C5A059] text-white px-8 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] z-10 shadow-lg">العشر الأواخر</div>
-              <InputGroup title="الاعتكاف والسحور" icon="🌙">
-                  <CustomInput label="عدد المعتكفين (رجال)" name="عدد_المعتكفين_رجال" value={formData.عدد_المعتكفين_رجال} onChange={handleChange} isNumeric />
-                  <CustomInput label="وجبات سحور (رجال)" name="عدد_وجبات_السحور_رجال" value={formData.عدد_وجبات_السحور_رجال} onChange={handleChange} isNumeric />
-                  <CustomInput label="عدد المعتكفات (نساء)" name="عدد_المعتكفين_نساء" value={formData.عدد_المعتكفين_نساء} onChange={handleChange} isNumeric />
-                  <CustomInput label="وجبات سحور (نساء)" name="عدد_وجبات_السحور_نساء" value={formData.عدد_وجبات_السحور_نساء} onChange={handleChange} isNumeric />
-              </InputGroup>
-            </div>
-          )}
-
-          {/* القسم 7: النشاط الدعوي والميداني */}
-          {showMissionary && (
-            <div className="animate-in fade-in">
-              <InputGroup title="النشاط الدعوي والميداني" icon="🤝">
-                <CustomInput label="كلمات وعظية (رجال)" name="عدد_الكلمات_الرجالية" value={formData.عدد_الكلمات_الرجالية} onChange={handleChange} isNumeric />
-                <CustomInput label="كلمات وعظية (نساء)" name="عدد_الكلمات_النسائية" value={formData.عدد_الكلمات_النسائية} onChange={handleChange} isNumeric />
-                <CustomInput label="مستفيدي الكلمات" name="عدد_مستفيدي_الكلمات" value={formData.عدد_مستفيدي_الكلمات} onChange={handleChange} isNumeric />
-                <CustomInput label="عدد المسابقات" name="عدد_المسابقات" value={formData.عدد_المسابقات} onChange={handleChange} isNumeric />
-                <CustomInput label="عدد المتطوعين" name="عدد_المتطوعين" value={formData.عدد_المتطوعين} onChange={handleChange} isNumeric />
-                <CustomInput label="عدد المشرفين" name="عدد المشرفين" value={formData["عدد المشرفين"]} onChange={handleChange} isNumeric />
-                <CustomInput label="أطفال الحضانة" name="عدد_اطفال_الحضانة" value={formData.عدد_اطفال_الحضانة} onChange={handleChange} isNumeric />
-              </InputGroup>
-            </div>
-          )}
-
-          {/* القسم الجديد: البرامج المجتمعية */}
-          {showCommunity && (
-            <div className="animate-in fade-in">
-              <InputGroup title="البرامج والفعاليات المجتمعية" icon="🎨">
-                <CustomInput label="اسم البرنامج المجتمعي" name="البرنامج_المجتمعي" value={formData.البرنامج_المجتمعي} onChange={handleChange} placeholder="مثال: مسابقة الطفل الرمضانية" />
-                <CustomInput label="عدد المستفيدين" name="عدد_المستفيدين" value={formData.عدد_المستفيدين} onChange={handleChange} isNumeric placeholder="٠" />
-                <CustomInput label="وصف البرنامج" name="وصف_البرنامج" value={formData.وصف_البرنامج} onChange={handleChange} placeholder="وصف مختصر للفعالية..." />
-              </InputGroup>
-            </div>
-          )}
-
-          {/* القسم 8: الملاحظات */}
           <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100">
-            <label className="text-[11px] font-black text-[#5a7b9c] uppercase tracking-widest mb-4 block">ملاحظات المشرف الميداني</label>
-            <textarea name="ملاحظات" value={formData.ملاحظات} onChange={(e:any) => setFormData(p=>({...p, ملاحظات: e.target.value}))} rows={4} className="w-full px-6 py-5 bg-slate-50 rounded-3xl outline-none focus:bg-white border-2 border-transparent focus:border-[#0054A6] font-bold text-[#003366] transition-all" placeholder="أدخل أي ملاحظات أو تحديات واجهتكم اليوم..." />
+             <label className="text-[10px] font-black text-slate-400 mb-4 block uppercase tracking-widest">ملاحظات إضافية</label>
+             <textarea name="ملاحظات" value={formData.ملاحظات} onChange={handleChange} rows={4} className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:bg-white border-2 border-transparent focus:border-[#0054A6] font-bold text-[#003366]" placeholder="اكتب ملاحظاتك هنا..." />
           </div>
 
-          {/* زر الإرسال العائم */}
-          <div className="fixed bottom-10 left-0 right-0 px-4 z-[50] pointer-events-none">
-            <button 
-                onClick={() => onSave(formData)} 
-                className="pointer-events-auto w-full max-w-lg mx-auto bg-[#0054A6] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 border-4 border-white active:scale-95 transition-all hover:bg-[#003366]"
-            >
-              <span className="text-sm">🚀</span>
-              ارسل التقرير
+          <div className="fixed bottom-10 left-0 right-0 px-4 z-[50]">
+            <button onClick={() => onSave({ ...formData, sheet: 'daily_mosque_report' })} className="w-full max-w-lg mx-auto bg-[#0054A6] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+               {isAdmin ? '💾 حفظ التعديلات والاعتماد' : '📤 إرسال التقرير للمراجعة'}
             </button>
           </div>
-        </div>
-      ) : (
-        <div className="bg-[#0054A6]/5 p-12 rounded-[3rem] border-2 border-dashed border-[#0054A6]/20 text-center space-y-4">
-            <div className="text-4xl">🔒</div>
-            <h4 className="text-xl font-bold text-[#003366]">بانتظار التحقق...</h4>
-            <p className="text-slate-500 text-sm max-w-xs mx-auto">يرجى اختيار المسجد وإدخال كلمة المرور لفتح نموذج الإحصائيات</p>
         </div>
       )}
     </div>

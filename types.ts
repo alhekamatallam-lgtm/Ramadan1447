@@ -33,6 +33,7 @@ export interface MosqueRecord {
   عدد_المستفيدين: number | string;
   وصف_البرنامج: string;
   ملاحظات: string;
+  الاعتماد?: string; // معتمد، يعاد التقرير، قيد المراجعة
 }
 
 export interface MaintenanceRecord {
@@ -50,6 +51,7 @@ export interface MaintenanceRecord {
   أعمال_الصيانة_سرد: string;
   ملاحظات_ومشكلات_ومقترحات: string;
   created_at?: string;
+  الاعتماد?: string;
 }
 
 export interface PhotoRecord {

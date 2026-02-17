@@ -4,28 +4,36 @@ import { MosqueRecord } from '../types';
 
 interface RecordListProps {
   records: MosqueRecord[];
+  isAdmin: boolean;
   onEdit: (record: MosqueRecord) => void;
   onAddNew: () => void;
 }
 
-const RecordList: React.FC<RecordListProps> = ({ records, onEdit, onAddNew }) => {
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'معتمد': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    case 'يعاد التقرير': return 'bg-orange-100 text-orange-700 border-orange-200';
+    default: return 'bg-slate-100 text-slate-500 border-slate-200';
+  }
+};
+
+const RecordList: React.FC<RecordListProps> = ({ records, isAdmin, onEdit, onAddNew }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredRecords = records.filter(r => 
     r.المسجد?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    r.label_day?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    r.record_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    r.label_day?.toLowerCase().includes(searchTerm.toLowerCase())
   ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 space-y-6">
       <div className="flex flex-col gap-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-black text-[#003366]">سجلات الأنشطة</h1>
-          <button
-            onClick={onAddNew}
-            className="p-3 bg-[#0054A6] text-white rounded-2xl shadow-lg active:scale-95 transition-all"
-          >
+          <div>
+             <h1 className="text-2xl font-black text-[#003366]">سجلات الأنشطة الميدانية</h1>
+             {isAdmin && <span className="text-[10px] font-black text-[#C5A059] uppercase tracking-widest">وضع المسؤول مفعل 🔐</span>}
+          </div>
+          <button onClick={onAddNew} className="p-3 bg-[#0054A6] text-white rounded-2xl shadow-lg hover:scale-105 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -38,84 +46,53 @@ const RecordList: React.FC<RecordListProps> = ({ records, onEdit, onAddNew }) =>
             placeholder="ابحث عن مسجد أو يوم..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pr-12 pl-4 py-4 bg-white border-2 border-slate-200 rounded-[1.5rem] shadow-sm outline-none focus:ring-2 focus:ring-[#0054A6]/20 focus:border-[#0054A6] transition-all font-medium text-sm text-[#003366] hover:border-slate-300"
+            className="w-full pr-12 pl-4 py-4 bg-white border-2 border-slate-100 rounded-[1.5rem] shadow-sm outline-none focus:border-[#0054A6] transition-all font-bold text-[#003366]"
           />
-          <span className="absolute inset-y-0 right-4 flex items-center text-slate-400">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </span>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:hidden gap-4">
-        {filteredRecords.map((record) => (
-          <div key={record.record_id} className="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-200 flex flex-col gap-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h4 className="font-black text-[#003366]">{record.المسجد}</h4>
-                <div className="flex gap-2 mt-1">
-                  <span className="text-[10px] bg-[#0054A6]/10 text-[#003366] px-2 py-0.5 rounded-full font-bold">{record.label_day}</span>
-                  <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">{record.تاريخ_هجري}</span>
-                </div>
-              </div>
-              <button 
-                onClick={() => onEdit(record)}
-                className="p-2 text-[#0054A6] bg-[#0054A6]/10 rounded-xl active:bg-[#0054A6]/20 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-3 gap-2 border-t border-slate-100 pt-4">
-              <div className="text-center">
-                <p className="text-[9px] text-slate-400 font-bold uppercase mb-1">مصلين</p>
-                <p className="font-black text-[#003366]">{Number(record.عدد_المصلين_رجال) + Number(record.عدد_المصلين_نساء)}</p>
-              </div>
-              <div className="text-center border-x border-slate-100">
-                <p className="text-[9px] text-slate-400 font-bold uppercase mb-1">إفطار</p>
-                <p className="font-black text-[#0054A6]">{record.عدد_وجبات_افطار_المدعومة || 0}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-[9px] text-slate-400 font-bold uppercase mb-1">حلقات</p>
-                <p className="font-black text-[#C5A059]">{record.عدد_طلاب_الحلقات || 0}</p>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="hidden md:block bg-white rounded-[2.5rem] shadow-sm border border-slate-200 overflow-hidden">
-        <table className="w-full text-right">
-          <thead className="border-b border-slate-200">
-            <tr className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest">
-              <th className="px-6 py-5">المسجد</th>
-              <th className="px-6 py-5">اليوم</th>
-              <th className="px-6 py-5">المصلين</th>
-              <th className="px-6 py-5">وجبات إفطار</th>
-              <th className="px-6 py-5 text-center">الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredRecords.map((record) => (
-              <tr key={record.record_id} className="hover:bg-slate-50 transition-colors group">
-                <td className="px-6 py-4 font-bold text-[#003366]">{record.المسجد}</td>
-                <td className="px-6 py-4">
-                  <span className="text-xs font-bold text-[#0054A6] bg-[#0054A6]/10 px-3 py-1 rounded-full">{record.label_day}</span>
-                </td>
-                <td className="px-6 py-4 text-slate-700 font-medium">
-                  {Number(record.عدد_المصلين_رجال) + Number(record.عدد_المصلين_نساء)}
-                </td>
-                <td className="px-6 py-4 font-black text-[#003366]">{record.عدد_وجبات_افطار_المدعومة || 0}</td>
-                <td className="px-6 py-4 text-center">
-                  <button onClick={() => onEdit(record)} className="text-[#0054A6] font-bold text-xs hover:underline">تعديل</button>
-                </td>
+      <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right">
+            <thead className="border-b border-slate-50">
+              <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                <th className="px-6 py-5">المسجد</th>
+                <th className="px-6 py-5">اليوم</th>
+                <th className="px-6 py-5">المصلين</th>
+                <th className="px-6 py-5">الحالة</th>
+                <th className="px-6 py-5 text-center">الإجراء</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filteredRecords.map((record) => (
+                <tr key={record.record_id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-5 font-bold text-[#003366]">{record.المسجد}</td>
+                  <td className="px-6 py-5">
+                    <span className="text-xs font-bold text-[#0054A6] bg-[#0054A6]/5 px-3 py-1 rounded-full">{record.label_day}</span>
+                  </td>
+                  <td className="px-6 py-5 font-black text-slate-600">
+                    {Number(record.عدد_المصلين_رجال || 0) + Number(record.عدد_المصلين_نساء || 0)}
+                  </td>
+                  <td className="px-6 py-5">
+                    <span className={`text-[10px] font-black px-3 py-1 rounded-full border ${getStatusStyle(record.الاعتماد || '')}`}>
+                      {record.الاعتماد || 'قيد المراجعة'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <button 
+                      onClick={() => onEdit(record)} 
+                      className={`text-xs font-black px-4 py-2 rounded-xl transition-all ${
+                        isAdmin ? 'bg-[#003366] text-white shadow-md' : 'text-[#0054A6] hover:bg-[#0054A6]/5'
+                      }`}
+                    >
+                      {isAdmin ? 'مراجعة واعتماد' : 'تعديل'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

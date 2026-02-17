@@ -18,7 +18,10 @@ const App: React.FC = () => {
   const [mosquesList, setMosquesList] = useState<MosqueInfo[]>([]);
   const [daysList, setDaysList] = useState<DayInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [editingRecord, setEditingRecord] = useState<MosqueRecord | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminModal, setShowAdminModal] = useState(false);
+  const [adminPassInput, setAdminPassInput] = useState('');
+  const [editingRecord, setEditingRecord] = useState<any>(null);
   const [notification, setNotification] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
 
   const fetchData = async () => {
@@ -31,8 +34,6 @@ const App: React.FC = () => {
         setPhotosList(response.sheets.photo || []);
         setMosquesList(response.sheets.mosque || []);
         setDaysList(response.sheets.Dayd || []);
-      } else {
-        throw new Error('Invalid data structure');
       }
     } catch (error) {
       showNotification('خطأ في تحميل البيانات', 'error');
@@ -45,6 +46,17 @@ const App: React.FC = () => {
     fetchData();
   }, []);
 
+  const handleAdminLogin = () => {
+    if (adminPassInput === 'admin123') {
+      setIsAdmin(true);
+      setShowAdminModal(false);
+      setAdminPassInput('');
+      showNotification('تم تسجيل دخول المسؤول بنجاح', 'success');
+    } else {
+      showNotification('كلمة المرور غير صحيحة', 'error');
+    }
+  };
+
   const showNotification = (message: string, type: 'success' | 'error') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
@@ -53,7 +65,8 @@ const App: React.FC = () => {
   const handleSave = async (data: any) => {
     setLoading(true);
     try {
-      await mosqueApi.save(data);
+      const payload = isAdmin ? data : { ...data, الاعتماد: 'قيد المراجعة' };
+      await mosqueApi.save(payload);
       showNotification('تم المزامنة بنجاح', 'success');
       setView('dashboard');
       setEditingRecord(null);
@@ -65,8 +78,37 @@ const App: React.FC = () => {
     }
   };
 
+  const approvedRecords = records.filter(r => r.الاعتماد === 'معتمد');
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-24 font-['Tajawal'] text-right" dir="rtl">
+      {/* نافذة دخول المسؤول */}
+      {showAdminModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#003366]/60 backdrop-blur-sm" onClick={() => setShowAdminModal(false)}></div>
+          <div className="relative bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 animate-in slide-in-from-top">
+            <div className="text-center space-y-4 mb-8">
+              <div className="w-16 h-16 bg-[#C5A059]/10 text-[#C5A059] rounded-2xl flex items-center justify-center text-3xl mx-auto">🔐</div>
+              <h2 className="text-2xl font-black text-[#003366]">دخول المسؤول</h2>
+              <p className="text-slate-500 text-sm font-bold">يرجى إدخال كلمة المرور للوصول لصلاحيات الاعتماد</p>
+            </div>
+            <input 
+              type="password" 
+              value={adminPassInput}
+              onChange={(e) => setAdminPassInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleAdminLogin()}
+              placeholder="كلمة المرور"
+              className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl mb-6 outline-none focus:border-[#0054A6] text-center font-black tracking-widest"
+              autoFocus
+            />
+            <div className="flex gap-4">
+              <button onClick={handleAdminLogin} className="flex-1 bg-[#0054A6] text-white py-4 rounded-2xl font-black shadow-lg hover:bg-[#003366] transition-all">دخول</button>
+              <button onClick={() => setShowAdminModal(false)} className="flex-1 bg-slate-100 text-slate-500 py-4 rounded-2xl font-black">إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-[#003366] text-white shadow-xl sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-24 flex items-center justify-between">
           <div className="flex items-center gap-5">
@@ -82,6 +124,11 @@ const App: React.FC = () => {
           <nav className="flex items-center bg-white/10 rounded-2xl p-1 gap-1 border border-white/5">
             <button onClick={() => setView('dashboard')} className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'dashboard' ? 'bg-[#0054A6] text-white shadow-lg' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>الرئيسية</button>
             <button onClick={() => setView('list')} className={`px-4 sm:px-6 py-2 rounded-xl text-sm font-bold transition-all ${view === 'list' ? 'bg-[#0054A6] text-white shadow-lg' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>السجلات</button>
+            {!isAdmin ? (
+               <button onClick={() => setShowAdminModal(true)} className="px-4 py-2 text-xs font-black bg-[#C5A059] text-[#003366] rounded-xl hover:scale-105 transition-all mr-2">دخول المسؤول</button>
+            ) : (
+               <button onClick={() => setIsAdmin(false)} className="px-4 py-2 text-xs font-black bg-red-500 text-white rounded-xl hover:scale-105 transition-all mr-2">خروج المسؤول</button>
+            )}
           </nav>
         </div>
       </header>
@@ -96,25 +143,18 @@ const App: React.FC = () => {
       )}
 
       {loading && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-xl z-[100] flex flex-col items-center justify-center">
-          <div className="relative flex items-center justify-center mb-8">
-            <div className="absolute w-32 h-32 bg-[#0054A6]/10 rounded-full animate-ping"></div>
-            <div className="relative bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-100">
-              <img src="https://next.rajhifoundation.org/files/52c533df-1.png" alt="Logo" className="h-16 w-auto" />
-            </div>
-            <div className="absolute -bottom-4 w-12 h-12 border-4 border-[#C5A059] border-t-[#0054A6] rounded-full animate-spin"></div>
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-xl z-[90] flex flex-col items-center justify-center">
+          <div className="relative bg-white p-6 rounded-[2rem] shadow-2xl border border-slate-100">
+             <div className="w-16 h-16 border-4 border-[#C5A059] border-t-[#0054A6] rounded-full animate-spin"></div>
           </div>
-          <div className="text-center space-y-2">
-            <p className="text-[#003366] text-xl font-black">جاري المزامنة</p>
-            <p className="text-slate-500 font-bold text-sm animate-pulse tracking-widest">يرجى الانتظار قليلاً...</p>
-          </div>
+          <p className="text-[#003366] text-xl font-black mt-4">جاري المعالجة...</p>
         </div>
       )}
 
       <main className="max-w-7xl mx-auto px-4 py-8 animate-in fade-in">
         {view === 'dashboard' && (
           <Dashboard 
-            records={records} 
+            records={approvedRecords} 
             mosques={mosquesList} 
             days={daysList} 
             photos={photosList}
@@ -126,6 +166,7 @@ const App: React.FC = () => {
         {view === 'list' && (
           <RecordList 
             records={records} 
+            isAdmin={isAdmin}
             onEdit={(r) => {setEditingRecord(r); setView('form');}} 
             onAddNew={() => {setEditingRecord(null); setView('form');}} 
           />
@@ -135,30 +176,30 @@ const App: React.FC = () => {
             initialData={editingRecord} 
             mosques={mosquesList} 
             days={daysList} 
-            existingRecords={records} 
+            isAdmin={isAdmin}
             onSave={handleSave} 
             onCancel={() => setView('dashboard')} 
           />
         )}
         {view === 'maintenance' && (
           <MaintenanceForm 
+            initialData={editingRecord}
             mosques={mosquesList} 
             days={daysList} 
+            isAdmin={isAdmin}
             onSave={handleSave} 
           />
         )}
         {view === 'maintenance_list' && (
           <MaintenanceDashboard 
             records={maintenanceRecords}
+            isAdmin={isAdmin}
+            onEdit={(r) => {setEditingRecord(r); setView('maintenance');}}
             onBack={() => setView('dashboard')}
-            onAddNew={() => setView('maintenance')}
+            onAddNew={() => {setEditingRecord(null); setView('maintenance');}}
           />
         )}
       </main>
-
-      <footer className="fixed bottom-0 left-0 right-0 bg-[#003366] text-white/50 py-3 text-center border-t border-white/5 backdrop-blur-md z-40">
-        <p className="text-[10px] font-bold uppercase tracking-widest">جميع الحقوق محفوظة لمؤسسة عبدالله بن عبدالعزيز الراجحي الخيرية © 1447هـ</p>
-      </footer>
     </div>
   );
 };

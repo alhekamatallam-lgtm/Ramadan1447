@@ -1,5 +1,5 @@
 
-export const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxzKxW5-UqzED89Q_fKcbuFJSIWtAQrcM5b8KGSkpm4VSg-JSgZJkSIj_SdoKe2fDtRGA/exec';
+export const API_ENDPOINT = 'https://script.google.com/macros/s/AKfycbx9gySu7jNy1Qt6EUDaaLlXfMzndfW9qU8cz6BrXx5_RUVtCOej6ge70KTpk7Mv5ivlyw/exec';
 
 export const INITIAL_RECORD: any = {
   record_id: '',
@@ -35,6 +35,7 @@ export const INITIAL_RECORD: any = {
   عدد_المستفيدين: '',
   وصف_البرنامج: '',
   ملاحظات: '',
+  الاعتماد: 'قيد المراجعة',
 };
 
 export const INITIAL_MAINTENANCE_RECORD: any = {
@@ -51,4 +52,5 @@ export const INITIAL_MAINTENANCE_RECORD: any = {
   أعمال_النظافة_سرد: '',
   أعمال_الصيانة_سرد: '',
   ملاحظات_ومشكلات_ومقترحات: '',
+  الاعتماد: 'قيد المراجعة',
 };
