@@ -11,6 +11,8 @@ interface RecordListProps {
 
 const getStatusStyle = (status: string) => {
   switch (status) {
+    case 'يعتمد': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+    case 'مرفوض': return 'bg-red-100 text-red-700 border-red-200';
     case 'معتمد': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     case 'يعاد التقرير': return 'bg-orange-100 text-orange-700 border-orange-200';
     default: return 'bg-slate-100 text-slate-500 border-slate-200';

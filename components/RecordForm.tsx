@@ -25,6 +25,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
   const [enteredPassword, setEnteredPassword] = useState('');
   const [isPasswordCorrect, setIsPasswordCorrect] = useState(false);
   const [selectedMosqueCode, setSelectedMosqueCode] = useState('');
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (initialData) {
@@ -48,6 +49,14 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
         ...prev, 
         [name]: inputMode === 'numeric' ? convertAndCleanNumbers(value) : value 
     }));
+    // مسح الخطأ عند التغيير
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleMosqueChange = (e: any) => {
@@ -62,6 +71,21 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
         "نوع الموقع": mosque["نوع الموقع"]
       }));
     }
+  };
+
+  const handleFormSubmit = () => {
+    const newErrors: { [key: string]: string } = {};
+    if (!formData.label_day) {
+      newErrors.label_day = 'يرجى اختيار اليوم / الليلة';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    onSave({ ...formData, sheet: 'daily_mosque_report' });
   };
 
   const isFarm = formData["نوع الموقع"] === "مزرعة";
@@ -85,14 +109,23 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
         <div className="space-y-8 animate-in fade-in">
           <InputGroup title="الوقت والموقع" icon="⏰">
             <div className="flex flex-col gap-2">
-               <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">اليوم / الليلة</label>
-               <select name="label_day" value={formData.label_day} onChange={(e) => {
-                 const d = days.find(x => x.code_day === e.target.value);
-                 setFormData(p => ({ ...p, label_day: e.target.value, code_day: d?.label || '' }));
-               }} className="px-6 py-4 border-2 rounded-2xl bg-white font-bold outline-none focus:border-[#0054A6]">
+               <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest flex items-center gap-1">
+                 اليوم / الليلة <span className="text-red-500">*</span>
+               </label>
+               <select 
+                 name="label_day" 
+                 value={formData.label_day} 
+                 onChange={(e) => {
+                   const d = days.find(x => x.code_day === e.target.value);
+                   setFormData(p => ({ ...p, label_day: e.target.value, code_day: d?.label || '' }));
+                   if (errors.label_day) setErrors(prev => ({ ...prev, label_day: '' }));
+                 }} 
+                 className={`px-6 py-4 border-2 rounded-2xl bg-white font-bold outline-none transition-all ${errors.label_day ? 'border-red-500' : 'focus:border-[#0054A6]'}`}
+               >
                  <option value="">اختر من القائمة...</option>
                  {days.map(d => <option key={d.code_day} value={d.code_day}>{d.label}</option>)}
                </select>
+               {errors.label_day && <span className="text-red-500 text-[10px] font-bold mr-2">{errors.label_day}</span>}
             </div>
             <div className="flex flex-col gap-2">
                <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">التاريخ الهجري</label>
@@ -112,21 +145,30 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
             <div className="bg-[#003366] p-10 rounded-[3rem] shadow-2xl text-white animate-in slide-in-from-bottom">
               <h3 className="text-xl font-black mb-6 flex items-center gap-3">
                 <span className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">🔐</span>
-                اعتماد التقرير (للمسؤول)
+                اعتماد التقرير الميداني
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 {['قيد المراجعة', 'معتمد', 'يعاد التقرير'].map(status => (
-                   <button 
-                     key={status}
-                     type="button"
-                     onClick={() => setFormData(p => ({ ...p, الاعتماد: status }))}
-                     className={`py-4 rounded-2xl font-black transition-all border-2 ${
-                       formData.الاعتماد === status ? 'bg-[#C5A059] border-[#C5A059] text-[#003366]' : 'bg-white/5 border-white/20 hover:bg-white/10'
-                     }`}
-                   >
-                     {status}
-                   </button>
-                 ))}
+              <div className="flex flex-col gap-4">
+                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mr-2">حالة الاعتماد</label>
+                <div className="relative">
+                  <select 
+                    value={formData.الاعتماد || 'قيد المراجعة'} 
+                    onChange={(e) => setFormData(p => ({ ...p, الاعتماد: e.target.value }))}
+                    className={`w-full px-8 py-5 rounded-2xl font-black outline-none border-2 transition-all appearance-none cursor-pointer ${
+                      formData.الاعتماد === 'يعتمد' ? 'bg-emerald-500 border-emerald-400 text-white' : 
+                      formData.الاعتماد === 'مرفوض' ? 'bg-red-500 border-red-400 text-white' : 
+                      'bg-white/10 border-white/20 text-white'
+                    }`}
+                  >
+                    <option value="قيد المراجعة" className="text-slate-800">قيد المراجعة</option>
+                    <option value="يعتمد" className="text-slate-800">يعتمد ✅</option>
+                    <option value="مرفوض" className="text-slate-800">مرفوض ❌</option>
+                  </select>
+                  <div className="absolute left-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-50">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -139,7 +181,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
           <div className="fixed bottom-10 left-0 right-0 px-4 z-[50]">
             <button 
               type="button"
-              onClick={() => onSave({ ...formData, sheet: 'daily_mosque_report' })} 
+              onClick={handleFormSubmit} 
               className="w-full max-w-lg mx-auto bg-[#0054A6] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all"
             >
                {isAdmin ? '💾 حفظ التعديلات والاعتماد' : '📤 إرسال التقرير للمراجعة'}

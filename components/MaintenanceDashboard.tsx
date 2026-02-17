@@ -10,6 +10,15 @@ interface MaintenanceDashboardProps {
   onAddNew: () => void;
 }
 
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'يعتمد': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+    case 'مرفوض': return 'bg-red-50 text-red-600 border-red-100';
+    case 'معتمد': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
+    default: return 'bg-slate-50 text-slate-400 border-slate-100';
+  }
+};
+
 const MaintenanceDashboard: React.FC<MaintenanceDashboardProps> = ({ records, isAdmin, onEdit, onBack, onAddNew }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -48,15 +57,13 @@ const MaintenanceDashboard: React.FC<MaintenanceDashboardProps> = ({ records, is
                   <td className="px-4 py-5 font-bold">{r.المسجد}</td>
                   <td className="px-4 py-5 font-black">{r.أعمال_الصيانة_عدد}</td>
                   <td className="px-4 py-5">
-                    <span className={`text-[9px] font-black px-3 py-1 rounded-full border ${
-                       r.الاعتماد === 'معتمد' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-slate-50 text-slate-400'
-                    }`}>
-                      {r.الاعتماد || 'تحت التدقيق'}
+                    <span className={`text-[9px] font-black px-3 py-1 rounded-full border ${getStatusStyle(r.الاعتماد || '')}`}>
+                      {r.الاعتماد || 'قيد المراجعة'}
                     </span>
                   </td>
                   <td className="px-4 py-5 text-center">
                     <button onClick={() => onEdit(r)} className="text-[#0054A6] text-xs font-black">
-                      {isAdmin ? 'اعتماد' : 'تعديل'}
+                      {isAdmin ? 'مراجعة واعتماد' : 'تعديل'}
                     </button>
                   </td>
                 </tr>
