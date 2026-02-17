@@ -39,7 +39,6 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
   useEffect(() => {
     if (isAdmin) return;
     const mosque = mosques.find(m => m.mosque_code === selectedMosqueCode);
-    // دعم كلمة المرور سواء كانت نص أو رقم من الـ API
     setIsPasswordCorrect(mosque && String(mosque.pwd).trim() === String(enteredPassword).trim());
   }, [enteredPassword, selectedMosqueCode, mosques, isAdmin]);
 
@@ -89,7 +88,6 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
                <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">اليوم / الليلة</label>
                <select name="label_day" value={formData.label_day} onChange={(e) => {
                  const d = days.find(x => x.code_day === e.target.value);
-                 // وفقاً للهيكلية في مثالك: code_day يأخذ المسمى العربي و label_day يأخذ الكود الإنجليزي
                  setFormData(p => ({ ...p, label_day: e.target.value, code_day: d?.label || '' }));
                }} className="px-6 py-4 border-2 rounded-2xl bg-white font-bold outline-none focus:border-[#0054A6]">
                  <option value="">اختر من القائمة...</option>
@@ -120,6 +118,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
                  {['قيد المراجعة', 'معتمد', 'يعاد التقرير'].map(status => (
                    <button 
                      key={status}
+                     type="button"
                      onClick={() => setFormData(p => ({ ...p, الاعتماد: status }))}
                      className={`py-4 rounded-2xl font-black transition-all border-2 ${
                        formData.الاعتماد === status ? 'bg-[#C5A059] border-[#C5A059] text-[#003366]' : 'bg-white/5 border-white/20 hover:bg-white/10'
@@ -138,7 +137,11 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
           </div>
 
           <div className="fixed bottom-10 left-0 right-0 px-4 z-[50]">
-            <button onClick={() => onSave({ ...formData, sheet: 'daily_mosque_report' })} className="w-full max-w-lg mx-auto bg-[#0054A6] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+            <button 
+              type="button"
+              onClick={() => onSave({ ...formData, sheet: 'daily_mosque_report' })} 
+              className="w-full max-w-lg mx-auto bg-[#0054A6] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all"
+            >
                {isAdmin ? '💾 حفظ التعديلات والاعتماد' : '📤 إرسال التقرير للمراجعة'}
             </button>
           </div>

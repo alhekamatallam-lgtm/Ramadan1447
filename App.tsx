@@ -65,14 +65,26 @@ const App: React.FC = () => {
   const handleSave = async (data: any) => {
     setLoading(true);
     try {
+      // في وضع المسؤول، نعتمد البيانات المرسلة كما هي (والتي تحتوي على الحالة الجديدة)
+      // أما في وضع المستخدم العادي، نضمن أن الحالة هي "قيد المراجعة"
       const payload = isAdmin ? data : { ...data, الاعتماد: 'قيد المراجعة' };
-      await mosqueApi.save(payload);
-      showNotification('تم المزامنة بنجاح', 'success');
-      setView('dashboard');
-      setEditingRecord(null);
-      await fetchData(); 
+      
+      const result = await mosqueApi.save(payload);
+      
+      if (result.success) {
+        showNotification('تم المزامنة بنجاح', 'success');
+        setView('dashboard');
+        setEditingRecord(null);
+        
+        // إضافة تأخير بسيط قبل التحديث للتأكد من استقرار البيانات في خادم جوجل
+        setTimeout(async () => {
+          await fetchData();
+        }, 1000);
+      } else {
+        throw new Error('API return success: false');
+      }
     } catch (error) {
-      showNotification('فشل في الاتصال بالقاعدة', 'error');
+      showNotification('فشل في الاتصال بالقاعدة أو تحديث الحالة', 'error');
     } finally {
       setLoading(false);
     }

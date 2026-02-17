@@ -105,6 +105,7 @@ const MaintenanceForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, o
                  {['قيد المراجعة', 'معتمد', 'يعاد التقرير'].map(status => (
                    <button 
                      key={status}
+                     type="button"
                      onClick={() => setFormData(p => ({ ...p, الاعتماد: status }))}
                      className={`py-4 rounded-2xl font-black transition-all border-2 ${
                        formData.الاعتماد === status ? 'bg-[#C5A059] border-[#C5A059] text-[#003366]' : 'bg-white/5 border-white/20 hover:bg-white/10'
@@ -124,6 +125,7 @@ const MaintenanceForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, o
 
           <div className="fixed bottom-10 left-0 right-0 px-4 z-[50]">
             <button 
+                type="button"
                 onClick={() => onSave({ ...formData, sheet: 'Maintenance_Report' })} 
                 className="w-full max-w-lg mx-auto bg-[#003366] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 border-4 border-white active:scale-95 transition-all"
             >
