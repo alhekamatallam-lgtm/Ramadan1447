@@ -73,7 +73,7 @@ const MaintenanceForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, o
         </div>
       )}
 
-      {(isPasswordCorrect || isAdmin) && (
+      {(isPasswordCorrect || isAdmin) ? (
         <div className="space-y-8 animate-in fade-in">
           <InputGroup title="اليوم والتاريخ" icon="📅">
             <div className="flex flex-col gap-2">
@@ -96,7 +96,7 @@ const MaintenanceForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, o
           </InputGroup>
 
           {isAdmin && (
-            <div className="bg-[#003366] p-10 rounded-[3rem] shadow-2xl text-white">
+            <div className="bg-[#003366] p-10 rounded-[3rem] shadow-2xl text-white animate-in slide-in-from-bottom">
               <h3 className="text-xl font-black mb-6 flex items-center gap-3">
                 <span className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-xl">🔐</span>
                 اعتماد تقرير الصيانة

@@ -65,8 +65,8 @@ const App: React.FC = () => {
   const handleSave = async (data: any) => {
     setLoading(true);
     try {
-      // في وضع المسؤول، نعتمد البيانات المرسلة كما هي (والتي تحتوي على الحالة الجديدة)
-      // أما في وضع المستخدم العادي، نضمن أن الحالة هي "قيد المراجعة"
+      // نستخدم البيانات كما هي إذا كان المسؤول هو من يحفظ (لأنها تتضمن الاعتماد المختار)
+      // أما المستخدم العادي فتكون الحالة دوماً "قيد المراجعة"
       const payload = isAdmin ? data : { ...data, الاعتماد: 'قيد المراجعة' };
       
       const result = await mosqueApi.save(payload);
@@ -76,10 +76,10 @@ const App: React.FC = () => {
         setView('dashboard');
         setEditingRecord(null);
         
-        // إضافة تأخير بسيط قبل التحديث للتأكد من استقرار البيانات في خادم جوجل
+        // تأخير بسيط لضمان تحديث جداول جوجل قبل الجلب من جديد
         setTimeout(async () => {
           await fetchData();
-        }, 1000);
+        }, 1500);
       } else {
         throw new Error('API return success: false');
       }
