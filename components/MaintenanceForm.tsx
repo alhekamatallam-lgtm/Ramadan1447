@@ -59,7 +59,7 @@ const MaintenanceForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, o
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10 pb-40 animate-in fade-in">
+    <div className="max-w-4xl mx-auto space-y-10 pb-40 animate-in fade-in text-right">
       {!isAdmin && (
         <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-2 h-full bg-[#003366]"></div>
@@ -108,9 +108,18 @@ const MaintenanceForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, o
           </InputGroup>
 
           <InputGroup title="إحصائيات الصيانة والنظافة" icon="📊">
-            <input type="text" inputMode="numeric" name="أعمال_النظافة_عدد" value={formData.أعمال_النظافة_عدد} onChange={handleChange} className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold" placeholder="أعمال النظافة" />
-            <input type="text" inputMode="numeric" name="أعمال_الصيانة_عدد" value={formData.أعمال_الصيانة_عدد} onChange={handleChange} className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold" placeholder="أعمال الصيانة" />
-            <input type="text" inputMode="numeric" name="عدد_كراتين_الماء_الواقعي" value={formData.عدد_كراتين_الماء_الواقعي} onChange={handleChange} className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold" placeholder="كراتين الماء" />
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">أعمال النظافة</label>
+              <input type="text" inputMode="numeric" name="أعمال_النظافة_عدد" value={formData.أعمال_النظافة_عدد} onChange={handleChange} className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold" placeholder="أدخل العدد" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">أعمال الصيانة</label>
+              <input type="text" inputMode="numeric" name="أعمال_الصيانة_عدد" value={formData.أعمال_الصيانة_عدد} onChange={handleChange} className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold" placeholder="أدخل العدد" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">كراتين الماء</label>
+              <input type="text" inputMode="numeric" name="عدد_كراتين_الماء_الواقعي" value={formData.عدد_كراتين_الماء_الواقعي} onChange={handleChange} className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold" placeholder="أدخل العدد" />
+            </div>
           </InputGroup>
 
           {isAdmin && (

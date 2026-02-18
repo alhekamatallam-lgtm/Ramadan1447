@@ -49,14 +49,7 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
         ...prev, 
         [name]: inputMode === 'numeric' ? convertAndCleanNumbers(value) : value 
     }));
-    // مسح الخطأ عند التغيير
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleMosqueChange = (e: any) => {
@@ -75,8 +68,8 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
 
   const handleFormSubmit = () => {
     const newErrors: { [key: string]: string } = {};
-    if (!formData.label_day) {
-      newErrors.label_day = 'يرجى اختيار اليوم / الليلة';
+    if (!formData.label_day || formData.label_day === "") {
+      newErrors.label_day = 'يجب اختيار اليوم أو الليلة (حقل إلزامي)';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -91,16 +84,22 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
   const isFarm = formData["نوع الموقع"] === "مزرعة";
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10 pb-40 animate-in fade-in">
+    <div className="max-w-4xl mx-auto space-y-10 pb-40 animate-in fade-in text-right">
       {!isAdmin && (
         <div className="bg-white p-8 rounded-[3rem] shadow-xl border border-slate-100">
           <h3 className="text-xl font-black text-[#003366] mb-8">👤 بيانات المشرف الميداني</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <select value={selectedMosqueCode} onChange={handleMosqueChange} className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl font-bold outline-none focus:border-[#0054A6]">
-              <option value="">اختر المسجد...</option>
-              {mosques.map(m => <option key={m.mosque_code} value={m.mosque_code}>{m.المسجد}</option>)}
-            </select>
-            <input type="password" value={enteredPassword} onChange={(e) => setEnteredPassword(e.target.value)} placeholder="كلمة المرور" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+            <div className="space-y-2">
+               <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">المسجد</label>
+               <select value={selectedMosqueCode} onChange={handleMosqueChange} className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl font-bold outline-none focus:border-[#0054A6] shadow-inner">
+                 <option value="">اختر المسجد...</option>
+                 {mosques.map(m => <option key={m.mosque_code} value={m.mosque_code}>{m.المسجد}</option>)}
+               </select>
+            </div>
+            <div className="space-y-2">
+               <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">كلمة المرور</label>
+               <input type="password" value={enteredPassword} onChange={(e) => setEnteredPassword(e.target.value)} placeholder="••••••••" className="w-full px-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl font-bold outline-none focus:border-[#0054A6] shadow-inner" />
+            </div>
           </div>
         </div>
       )}
@@ -110,45 +109,70 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
           <InputGroup title="الوقت والموقع" icon="⏰">
             <div className="flex flex-col gap-2">
                <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest flex items-center gap-1">
-                 اليوم / الليلة <span className="text-red-500">*</span>
+                 اليوم / الليلة <span className="text-red-500 font-black">*</span>
                </label>
                <select 
                  name="label_day" 
-                 value={formData.label_day} 
+                 value={formData.code_day} // نستخدم الكود كقيمة للمنسدلة
                  onChange={(e) => {
-                   const d = days.find(x => x.code_day === e.target.value);
-                   setFormData(p => ({ ...p, label_day: e.target.value, code_day: d?.label || '' }));
+                   const selectedCode = e.target.value;
+                   const d = days.find(x => x.code_day === selectedCode);
+                   // نقوم بحفظ الاسم العربي في label_day والكود في code_day
+                   setFormData(p => ({ 
+                     ...p, 
+                     label_day: d?.label || '', 
+                     code_day: selectedCode 
+                   }));
                    if (errors.label_day) setErrors(prev => ({ ...prev, label_day: '' }));
                  }} 
-                 className={`px-6 py-4 border-2 rounded-2xl bg-white font-bold outline-none transition-all ${errors.label_day ? 'border-red-500' : 'focus:border-[#0054A6]'}`}
+                 className={`px-6 py-4 border-2 rounded-2xl bg-white font-bold outline-none transition-all appearance-none ${errors.label_day ? 'border-red-500 bg-red-50/30' : 'focus:border-[#0054A6]'}`}
                >
                  <option value="">اختر من القائمة...</option>
                  {days.map(d => <option key={d.code_day} value={d.code_day}>{d.label}</option>)}
                </select>
-               {errors.label_day && <span className="text-red-500 text-[10px] font-bold mr-2">{errors.label_day}</span>}
+               {errors.label_day && <span className="text-red-600 text-[10px] font-black mr-2 animate-pulse">⚠️ {errors.label_day}</span>}
             </div>
             <div className="flex flex-col gap-2">
                <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">التاريخ الهجري</label>
-               <input type="text" value={formData.تاريخ_هجري} readOnly className="px-6 py-4 bg-slate-50 rounded-2xl text-slate-400 font-bold" />
+               <input type="text" value={formData.تاريخ_هجري} readOnly className="px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-slate-400 font-bold" />
             </div>
           </InputGroup>
 
           <InputGroup title="إحصائيات المصلين والإفطار" icon="🕌">
-            {!isFarm && <input type="text" inputMode="numeric" name="عدد_المصلين_رجال" value={formData.عدد_المصلين_رجال} onChange={handleChange} placeholder="المصلين رجال" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />}
-            {!isFarm && <input type="text" inputMode="numeric" name="عدد_المصلين_نساء" value={formData.عدد_المصلين_نساء} onChange={handleChange} placeholder="المصلين نساء" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />}
-            <input type="text" inputMode="numeric" name="عدد_وجبات_افطار_المدعومة" value={formData.عدد_وجبات_افطار_المدعومة} onChange={handleChange} placeholder="وجبات إفطار مدعومة" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
-            <input type="text" inputMode="numeric" name="عدد_وجبات_الافطار_فعلي" value={formData.عدد_وجبات_الافطار_فعلي} onChange={handleChange} placeholder="وجبات إفطار فعلي" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
-            <input type="text" inputMode="numeric" name="عدد_كراتين_ماء" value={formData.عدد_كراتين_ماء} onChange={handleChange} placeholder="عدد كراتين الماء" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+            {!isFarm && 
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">المصلين رجال</label>
+                <input type="text" inputMode="numeric" name="عدد_المصلين_رجال" value={formData.عدد_المصلين_رجال} onChange={handleChange} placeholder="أدخل العدد" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+              </div>
+            }
+            {!isFarm && 
+              <div className="flex flex-col gap-2">
+                <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">المصلين نساء</label>
+                <input type="text" inputMode="numeric" name="عدد_المصلين_نساء" value={formData.عدد_المصلين_نساء} onChange={handleChange} placeholder="أدخل العدد" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+              </div>
+            }
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">وجبات إفطار مدعومة</label>
+              <input type="text" inputMode="numeric" name="عدد_وجبات_افطار_المدعومة" value={formData.عدد_وجبات_افطار_المدعومة} onChange={handleChange} placeholder="أدخل العدد" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">وجبات إفطار فعلي</label>
+              <input type="text" inputMode="numeric" name="عدد_وجبات_الافطار_فعلي" value={formData.عدد_وجبات_الافطار_فعلي} onChange={handleChange} placeholder="أدخل العدد" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] font-black text-slate-400 mr-2 uppercase tracking-widest">عدد كراتين الماء</label>
+              <input type="text" inputMode="numeric" name="عدد_كراتين_ماء" value={formData.عدد_كراتين_ماء} onChange={handleChange} placeholder="أدخل العدد" className="px-6 py-4 border-2 border-slate-100 rounded-2xl font-bold outline-none focus:border-[#0054A6]" />
+            </div>
           </InputGroup>
 
           {isAdmin && (
-            <div className="bg-[#003366] p-10 rounded-[3rem] shadow-2xl text-white animate-in slide-in-from-bottom">
+            <div className="bg-[#003366] p-10 rounded-[3rem] shadow-2xl text-white animate-in slide-in-from-bottom border-b-8 border-[#C5A059]">
               <h3 className="text-xl font-black mb-6 flex items-center gap-3">
                 <span className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">🔐</span>
                 اعتماد التقرير الميداني
               </h3>
               <div className="flex flex-col gap-4">
-                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mr-2">حالة الاعتماد</label>
+                <label className="text-[10px] font-black text-white/50 uppercase tracking-widest mr-2">تغيير حالة الاعتماد</label>
                 <div className="relative">
                   <select 
                     value={formData.الاعتماد || 'قيد المراجعة'} 
@@ -182,9 +206,9 @@ const RecordForm: React.FC<any> = ({ initialData, mosques, days, isAdmin, onSave
             <button 
               type="button"
               onClick={handleFormSubmit} 
-              className="w-full max-w-lg mx-auto bg-[#0054A6] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all"
+              className="w-full max-w-lg mx-auto bg-[#0054A6] text-white py-5 rounded-[2.5rem] font-black text-xl shadow-2xl flex items-center justify-center gap-3 active:scale-95 transition-all border-b-4 border-[#003366]"
             >
-               {isAdmin ? '💾 حفظ التعديلات والاعتماد' : '📤 إرسال التقرير للمراجعة'}
+               {isAdmin ? '💾 حفظ التعديلات والاعتماد النهائي' : '📤 إرسال التقرير للمراجعة'}
             </button>
           </div>
         </div>
